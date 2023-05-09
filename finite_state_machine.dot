@@ -1,0 +1,47 @@
+digraph finite_state_machine {
+	fontname="Helvetica,Arial,sans-serif"
+	node [fontname="Helvetica,Arial,sans-serif"]
+	edge [fontname="Helvetica,Arial,sans-serif"]
+	rankdir=LR;
+	node [shape = doublecircle]; Tag Class Id Eos;
+	node [shape = circle];
+
+    Tag
+    Id
+    Class
+    Newline
+    Indent
+    Outdent
+    StartAttributes
+    Attribute
+    EndAttributes
+    Text
+    Eos
+    
+    Tag -> Id [label = "hash"];
+	Tag -> Class [label = "dot"];
+	Tag -> StartAttributes [label = "("];
+	Tag -> Text [label = "whitespace followed by \\w"];
+	Tag -> Newline [label = "\\n | \\r\\n"];
+	Id -> Id [label = "hash"];
+	Id -> Class [label = "dot"];
+	Id -> Text [label = "whitespace followed by \\w"];
+	Id -> Indent [label = "\\n | \\r\\n"];
+	Class -> Class [label = "dot"];
+	Class -> Id [label = "hash"];
+	Class -> Text [label = "whitespace followed by \\w"];
+	Class -> Indent [label = "\\n | \\r\\n"];
+	StartAttributes -> Attribute [label = "until whitespace or ,"];
+	Attribute -> Attribute [label = "whitespace or ,"];
+	Attribute -> EndAttributes [label = ")"];
+	Text -> Newline [label = "\\n | \\r\\n"];
+	Text -> Outdent
+	EndAttributes -> Outdent
+	Outdent -> Class [label = "dot"];
+	Outdent -> Eos;
+	Newline -> Id [label = "hash"];
+	Newline -> Class [label = "dot"];
+	Indent -> Tag [label = "char"];
+	Indent -> Id [label = "hash"];
+	Indent -> Class [label = "dot"];
+}
