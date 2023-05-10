@@ -1,5 +1,7 @@
+use nom::branch::alt;
 use nom::{
     bytes::complete::{tag, take_till1, take_until1},
+    character::complete::line_ending,
     IResult,
 };
 
@@ -18,7 +20,61 @@ pub fn process_text(input: &str) -> IResult<&str, &str> {
 }
 
 pub fn process_newline(input: &str) -> IResult<&str, &str> {
-    tag("\n")(input)
+    line_ending(input)
+}
+
+#[derive(Debug, PartialEq)]
+pub enum HsmlToken {
+    Tag(String),
+    Class(String),
+    Text(String),
+    Newline,
+}
+
+pub fn parse(input: &str) -> IResult<&str, Vec<HsmlToken>> {
+    let mut tokens: Vec<HsmlToken> = vec![];
+
+    let mut input = input;
+
+    loop {
+        let (rest, tag_token) = process_tag(input)?;
+        tokens.push(HsmlToken::Tag(tag_token.to_string()));
+        input = rest;
+
+        let mut classes: Vec<String> = vec![];
+
+        loop {
+            let (rest, class) = process_class(input)?;
+            classes.push(class.to_string());
+            input = rest;
+
+            let (rest, _) = alt((tag("."), tag("\n")))(input)?;
+            input = rest;
+
+            if input.starts_with(" ") {
+                let (rest, _) = tag(" ")(input)?;
+                input = rest;
+            } else {
+                break;
+            }
+        }
+
+        tokens.push(HsmlToken::Class(classes.join(" ")));
+
+        let (rest, text) = process_text(input)?;
+        tokens.push(HsmlToken::Text(text.to_string()));
+        input = rest;
+
+        let (rest, newline) = process_newline(input)?;
+        tokens.push(HsmlToken::Newline);
+        input = rest;
+
+        if input.is_empty() {
+            break;
+        }
+    }
+
+    Ok((input, tokens))
 }
 
 #[cfg(test)]
