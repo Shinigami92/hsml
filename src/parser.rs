@@ -31,7 +31,13 @@ pub struct ClassNode {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct RootNode {
+    pub nodes: Vec<HsmlNode>,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum HsmlNode {
+    Root(RootNode),
     Tag(TagNode),
     Class(ClassNode),
     Text(TextNode),
@@ -122,10 +128,19 @@ pub fn process_newline(input: &str) -> IResult<&str, &str> {
     line_ending(input)
 }
 
-pub fn parse(input: &str) -> IResult<&str, HsmlNode> {
-    let (input, node) = tag_node(input)?;
+pub fn parse(input: &str) -> IResult<&str, RootNode> {
+    let mut nodes: Vec<HsmlNode> = vec![];
 
-    Ok((input, HsmlNode::Tag(node)))
+    let mut input = input;
+
+    while let Ok((rest, node)) = tag_node(input) {
+        nodes.push(HsmlNode::Tag(node));
+        input = rest;
+    }
+
+    // println!("input: {}", input);
+
+    Ok((input, RootNode { nodes }))
 }
 
 #[cfg(test)]
