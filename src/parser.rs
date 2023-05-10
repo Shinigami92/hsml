@@ -21,15 +21,20 @@ pub struct TextNode {
 #[derive(Debug, PartialEq)]
 pub struct TagNode {
     pub tag: String,
-    pub classes: Option<Vec<String>>,
+    pub classes: Option<Vec<ClassNode>>,
     pub text: Option<TextNode>,
     pub children: Option<Vec<HsmlNode>>,
 }
 
 #[derive(Debug, PartialEq)]
+pub struct ClassNode {
+    pub name: String,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum HsmlNode {
     Tag(TagNode),
-    Class(String),
+    Class(ClassNode),
     Text(String),
     Newline,
 }
@@ -41,13 +46,13 @@ pub fn process_tag(input: &str) -> IResult<&str, &str> {
 pub fn tag_node(input: &str) -> IResult<&str, TagNode> {
     let (input, tag_name) = process_tag(input)?;
 
-    let mut classes: Vec<String> = vec![];
+    let mut classes: Vec<ClassNode> = vec![];
 
     let mut input = input;
 
     loop {
-        if let Ok((rest, class)) = process_class(input) {
-            classes.push(class.to_string());
+        if let Ok((rest, class)) = class_node(input) {
+            classes.push(class);
             input = rest;
         } else {
             break;
@@ -67,7 +72,7 @@ pub fn tag_node(input: &str) -> IResult<&str, TagNode> {
         input,
         TagNode {
             tag: tag_name.to_string(),
-            classes: Some(classes),
+            classes: (!classes.is_empty()).then_some(classes),
             text: text_node,
             children: None,
         },
@@ -77,6 +82,17 @@ pub fn tag_node(input: &str) -> IResult<&str, TagNode> {
 pub fn process_class(input: &str) -> IResult<&str, &str> {
     let (input, _) = tag(".")(input)?;
     take_till1(|c| c == ' ' || c == '.' || c == '\n')(input)
+}
+
+pub fn class_node(input: &str) -> IResult<&str, ClassNode> {
+    let (input, class_name) = process_class(input)?;
+
+    Ok((
+        input,
+        ClassNode {
+            name: class_name.to_string(),
+        },
+    ))
 }
 
 pub fn process_text(input: &str) -> IResult<&str, &str> {
