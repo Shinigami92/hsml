@@ -1,6 +1,6 @@
 use nom::{
     bytes::complete::{take_till, take_till1},
-    IResult,
+    IResult, Needed,
 };
 
 use crate::parser::{class::class_node, text::text_node};
@@ -16,9 +16,22 @@ pub struct TagNode {
     pub children: Option<Vec<TagNode>>,
 }
 
+fn starts_with_ascii_alphabetic(s: &str) -> bool {
+    if let Some(c) = s.chars().next() {
+        c.is_ascii_alphabetic()
+    } else {
+        false
+    }
+}
+
 pub fn process_tag(input: &str) -> IResult<&str, &str> {
-    // TODO @Shinigami92 2023-05-10: Should start with a letter
-    take_till1(|c: char| c != '-' && !c.is_ascii_alphanumeric())(input)
+    let (input, tag_name) = take_till1(|c: char| c != '-' && !c.is_ascii_alphanumeric())(input)?;
+
+    if starts_with_ascii_alphabetic(tag_name) {
+        Ok((input, tag_name))
+    } else {
+        Err(nom::Err::Incomplete(Needed::Unknown))
+    }
 }
 
 pub fn tag_node(input: &str) -> IResult<&str, TagNode> {
@@ -79,6 +92,11 @@ pub fn tag_node(input: &str) -> IResult<&str, TagNode> {
 
 #[cfg(test)]
 mod tests {
+    use nom::{
+        error::{Error, ErrorKind},
+        Needed,
+    };
+
     use crate::parser::tag::process_tag;
 
     #[test]
@@ -161,11 +179,100 @@ mod tests {
         assert_eq!(rest, ".input");
     }
 
-    // TODO @Shinigami92 2023-05-10: Add negative tests for
-    // - tag starting with a number
-    // - tag starting with a special character
-    // - tag starting with a space
-    // - tag starting with a dot
-    // - tag starting with a hash
-    // - tag starting with a line ending
+    // Negative tests
+
+    #[test]
+    fn it_should_not_process_tag_with_number() {
+        let input = "42.input";
+
+        assert_eq!(
+            Err(nom::Err::Incomplete(Needed::Unknown)),
+            process_tag(input)
+        );
+    }
+
+    #[test]
+    fn it_should_not_process_tag_with_special_character() {
+        let input = "$span.input";
+
+        assert_eq!(
+            Err(nom::Err::Error(Error {
+                input: "$span.input",
+                code: ErrorKind::TakeTill1
+            })),
+            process_tag(input)
+        );
+
+        let input = "]span.input";
+
+        assert_eq!(
+            Err(nom::Err::Error(Error {
+                input: "]span.input",
+                code: ErrorKind::TakeTill1
+            })),
+            process_tag(input)
+        );
+
+        let input = ")span.input";
+
+        assert_eq!(
+            Err(nom::Err::Error(Error {
+                input: ")span.input",
+                code: ErrorKind::TakeTill1
+            })),
+            process_tag(input)
+        );
+    }
+
+    #[test]
+    fn it_should_not_process_tag_with_whitespace() {
+        let input = " span.input";
+
+        assert_eq!(
+            Err(nom::Err::Error(Error {
+                input: " span.input",
+                code: ErrorKind::TakeTill1
+            })),
+            process_tag(input)
+        );
+    }
+
+    #[test]
+    fn it_should_not_process_tag_with_dot() {
+        let input = ".span.input";
+
+        assert_eq!(
+            Err(nom::Err::Error(Error {
+                input: ".span.input",
+                code: ErrorKind::TakeTill1
+            })),
+            process_tag(input)
+        );
+    }
+
+    #[test]
+    fn it_should_not_process_tag_with_hash() {
+        let input = "#span.input";
+
+        assert_eq!(
+            Err(nom::Err::Error(Error {
+                input: "#span.input",
+                code: ErrorKind::TakeTill1
+            })),
+            process_tag(input)
+        );
+    }
+
+    #[test]
+    fn it_should_not_process_tag_with_line_ending() {
+        let input = "\nspan.input";
+
+        assert_eq!(
+            Err(nom::Err::Error(Error {
+                input: "\nspan.input",
+                code: ErrorKind::TakeTill1
+            })),
+            process_tag(input)
+        );
+    }
 }
