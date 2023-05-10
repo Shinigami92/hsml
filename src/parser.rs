@@ -34,7 +34,7 @@ pub struct ClassNode {
 pub enum HsmlNode {
     Tag(TagNode),
     Class(ClassNode),
-    Text(String),
+    Text(TextNode),
     Newline,
 }
 
@@ -45,29 +45,27 @@ pub fn process_tag(input: &str) -> IResult<&str, &str> {
 pub fn tag_node(input: &str) -> IResult<&str, TagNode> {
     let (input, tag_name) = process_tag(input)?;
 
-    let mut classes: Vec<ClassNode> = vec![];
+    let mut class_nodes: Vec<ClassNode> = vec![];
 
     let mut input = input;
 
-    while let Ok((rest, class)) = class_node(input) {
-        classes.push(class);
+    while let Ok((rest, node)) = class_node(input) {
+        class_nodes.push(node);
         input = rest;
     }
 
-    let mut text_node: Option<TextNode> = None;
-
-    if let Ok((rest, text)) = process_text(input) {
-        text_node = Some(TextNode {
-            text: text.to_string(),
-        });
+    let text_node: Option<TextNode> = if let Ok((rest, node)) = text_node(input) {
         input = rest;
-    }
+        Some(node)
+    } else {
+        None
+    };
 
     Ok((
         input,
         TagNode {
             tag: tag_name.to_string(),
-            classes: (!classes.is_empty()).then_some(classes),
+            classes: (!class_nodes.is_empty()).then_some(class_nodes),
             text: text_node,
             children: None,
         },
@@ -95,14 +93,25 @@ pub fn process_text(input: &str) -> IResult<&str, &str> {
     take_until1("\n")(input)
 }
 
+pub fn text_node(input: &str) -> IResult<&str, TextNode> {
+    let (input, text) = process_text(input)?;
+
+    Ok((
+        input,
+        TextNode {
+            text: text.to_string(),
+        },
+    ))
+}
+
 pub fn process_newline(input: &str) -> IResult<&str, &str> {
     line_ending(input)
 }
 
 pub fn parse(input: &str) -> IResult<&str, HsmlNode> {
-    let (input, tag_node) = tag_node(input)?;
+    let (input, node) = tag_node(input)?;
 
-    Ok((input, HsmlNode::Tag(tag_node)))
+    Ok((input, HsmlNode::Tag(node)))
 }
 
 #[cfg(test)]
