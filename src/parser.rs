@@ -1,5 +1,5 @@
 use nom::{
-    bytes::complete::{tag, take_till1, take_until1},
+    bytes::complete::{tag, take_till, take_till1, take_until1},
     character::complete::line_ending,
     IResult,
 };
@@ -22,7 +22,7 @@ pub struct TagNode {
     pub tag: String,
     pub classes: Option<Vec<ClassNode>>,
     pub text: Option<TextNode>,
-    pub children: Option<Vec<HsmlNode>>,
+    pub children: Option<Vec<TagNode>>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -35,19 +35,26 @@ pub enum HsmlNode {
     Tag(TagNode),
     Class(ClassNode),
     Text(TextNode),
-    Newline,
 }
 
 pub fn process_tag(input: &str) -> IResult<&str, &str> {
-    take_till1(|c| c == ' ' || c == '.' || c == '\n')(input)
+    // TODO @Shinigami92 2023-05-10: Should start with a letter
+    take_till1(|c: char| !c.is_ascii_alphanumeric())(input)
 }
 
 pub fn tag_node(input: &str) -> IResult<&str, TagNode> {
-    let (input, tag_name) = process_tag(input)?;
+    let (_, prev) = take_till(|c: char| c.is_ascii_alphabetic())(input)?;
 
-    let mut class_nodes: Vec<ClassNode> = vec![];
+    let (input, tag_name) = if !prev.ends_with('.') {
+        process_tag(input)?
+    } else {
+        let (_, input) = input.split_at(prev.len() - 1);
+        (input, "div")
+    };
 
     let mut input = input;
+
+    let mut class_nodes: Vec<ClassNode> = vec![];
 
     while let Ok((rest, node)) = class_node(input) {
         class_nodes.push(node);
@@ -61,13 +68,20 @@ pub fn tag_node(input: &str) -> IResult<&str, TagNode> {
         None
     };
 
+    let mut children: Vec<TagNode> = vec![];
+
+    while let Ok((rest, node)) = tag_node(input) {
+        children.push(node);
+        input = rest;
+    }
+
     Ok((
         input,
         TagNode {
             tag: tag_name.to_string(),
             classes: (!class_nodes.is_empty()).then_some(class_nodes),
             text: text_node,
-            children: None,
+            children: (!children.is_empty()).then_some(children),
         },
     ))
 }
