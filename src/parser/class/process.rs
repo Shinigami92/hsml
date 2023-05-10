@@ -14,12 +14,12 @@ pub fn process_class(input: &str) -> IResult<&str, &str> {
     let (remaining, class) =
         take_till1(|c: char| c == '.' || c == '(' || c.is_whitespace())(input)?;
 
-    // Parse arbitrary tailwind color
+    // Parse arbitrary tailwind values (https://tailwindcss.com/docs/adding-custom-styles#using-arbitrary-values)
     if class.contains("[#") {
         let (remaining2, class_prefix) = take_till1(|c: char| c == '[')(class)?;
 
-        if let Ok((_, color)) = square_bracket_delimited(remaining2) {
-            let i = class_prefix.len() + color.len() + 2;
+        if let Ok((_, arbitrary_value)) = square_bracket_delimited(remaining2) {
+            let i = class_prefix.len() + arbitrary_value.len() + 2;
             let (class, _) = class.split_at(i);
 
             let (_, input) = input.split_at(class.len());
@@ -66,13 +66,16 @@ mod tests {
     }
 
     #[test]
-    fn it_should_process_class_with_arbitrary_tailwind_color() {
+    fn it_should_process_class_with_arbitrary_tailwind_value() {
         let input = ".bg-[#1da1f2]#name Text";
 
         let (rest, class) = process_class(input).unwrap();
 
         assert_eq!(class, "bg-[#1da1f2]");
         assert_eq!(rest, "#name Text");
+
+        // TODO @Shinigami92 2023-05-10: lg:[&:nth-child(3)]:hover:underline
+        // TODO @Shinigami92 2023-05-10: bg-[url('/what_a_rush.png')]
     }
 
     #[test]
