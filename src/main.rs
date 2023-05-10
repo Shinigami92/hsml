@@ -1,7 +1,7 @@
 use hsml::parser::parse;
 
 fn main() {
-    let content = "h1 Vite CJS Faker Demo\n
+    let content = "h1.text-red Vite CJS Faker Demo\n
   .card\n
     .card__image\n
       img(:src=\"natureImageUrl\" :alt=\"'Background image for ' + fullName\")\n
@@ -10,7 +10,7 @@ fn main() {
     .card__body {{ fullName }}\n
 ";
 
-    let (result, hsml_ast) = parse(content).unwrap();
+    let (_, hsml_ast) = parse(content).unwrap();
 
     dbg!(hsml_ast);
 }

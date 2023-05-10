@@ -1,11 +1,10 @@
-use nom::branch::alt;
 use nom::{
     bytes::complete::{tag, take_till1, take_until1},
     character::complete::line_ending,
     IResult,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum HsmlToken {
     Tag(String),
     Class(String),
@@ -13,7 +12,7 @@ pub enum HsmlToken {
     Newline,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct TextNode {
     pub text: String,
 }
@@ -26,7 +25,7 @@ pub struct TagNode {
     pub children: Option<Vec<HsmlNode>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ClassNode {
     pub name: String,
 }
@@ -40,7 +39,7 @@ pub enum HsmlNode {
 }
 
 pub fn process_tag(input: &str) -> IResult<&str, &str> {
-    take_until1(" ")(input)
+    take_till1(|c| c == ' ' || c == '.' || c == '\n')(input)
 }
 
 pub fn tag_node(input: &str) -> IResult<&str, TagNode> {
@@ -50,13 +49,9 @@ pub fn tag_node(input: &str) -> IResult<&str, TagNode> {
 
     let mut input = input;
 
-    loop {
-        if let Ok((rest, class)) = class_node(input) {
-            classes.push(class);
-            input = rest;
-        } else {
-            break;
-        }
+    while let Ok((rest, class)) = class_node(input) {
+        classes.push(class);
+        input = rest;
     }
 
     let mut text_node: Option<TextNode> = None;
