@@ -1,10 +1,10 @@
 use nom::{character::complete::line_ending, IResult};
 
 use self::{
-    attribute::AttributeNode,
-    class::ClassNode,
-    tag::{tag_node, TagNode},
-    text::TextNode,
+    attribute::node::AttributeNode,
+    class::node::ClassNode,
+    tag::node::{tag_node, TagNode},
+    text::node::TextNode,
 };
 
 pub mod attribute;
