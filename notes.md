@@ -1,0 +1,3 @@
+- https://crates.io/crates/nom
+- https://crates.io/crates/syn
+- https://en.wikipedia.org/wiki/Parser_combinator
