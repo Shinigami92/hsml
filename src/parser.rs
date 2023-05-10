@@ -5,8 +5,73 @@ use nom::{
     IResult,
 };
 
+#[derive(Debug, PartialEq)]
+pub enum HsmlToken {
+    Tag(String),
+    Class(String),
+    Text(String),
+    Newline,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct TextNode {
+    pub text: String,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct TagNode {
+    pub tag: String,
+    pub classes: Option<Vec<String>>,
+    pub text: Option<TextNode>,
+    pub children: Option<Vec<HsmlNode>>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum HsmlNode {
+    Tag(TagNode),
+    Class(String),
+    Text(String),
+    Newline,
+}
+
 pub fn process_tag(input: &str) -> IResult<&str, &str> {
     take_until1(" ")(input)
+}
+
+pub fn tag_node(input: &str) -> IResult<&str, TagNode> {
+    let (input, tag_name) = process_tag(input)?;
+
+    let mut classes: Vec<String> = vec![];
+
+    let mut input = input;
+
+    loop {
+        if let Ok((rest, class)) = process_class(input) {
+            classes.push(class.to_string());
+            input = rest;
+        } else {
+            break;
+        }
+    }
+
+    let mut text_node: Option<TextNode> = None;
+
+    if let Ok((rest, text)) = process_text(input) {
+        text_node = Some(TextNode {
+            text: text.to_string(),
+        });
+        input = rest;
+    }
+
+    Ok((
+        input,
+        TagNode {
+            tag: tag_name.to_string(),
+            classes: Some(classes),
+            text: text_node,
+            children: None,
+        },
+    ))
 }
 
 pub fn process_class(input: &str) -> IResult<&str, &str> {
@@ -23,58 +88,10 @@ pub fn process_newline(input: &str) -> IResult<&str, &str> {
     line_ending(input)
 }
 
-#[derive(Debug, PartialEq)]
-pub enum HsmlToken {
-    Tag(String),
-    Class(String),
-    Text(String),
-    Newline,
-}
+pub fn parse(input: &str) -> IResult<&str, HsmlNode> {
+    let (input, tag_node) = tag_node(input)?;
 
-pub fn parse(input: &str) -> IResult<&str, Vec<HsmlToken>> {
-    let mut tokens: Vec<HsmlToken> = vec![];
-
-    let mut input = input;
-
-    loop {
-        let (rest, tag_token) = process_tag(input)?;
-        tokens.push(HsmlToken::Tag(tag_token.to_string()));
-        input = rest;
-
-        let mut classes: Vec<String> = vec![];
-
-        loop {
-            let (rest, class) = process_class(input)?;
-            classes.push(class.to_string());
-            input = rest;
-
-            let (rest, _) = alt((tag("."), tag("\n")))(input)?;
-            input = rest;
-
-            if input.starts_with(" ") {
-                let (rest, _) = tag(" ")(input)?;
-                input = rest;
-            } else {
-                break;
-            }
-        }
-
-        tokens.push(HsmlToken::Class(classes.join(" ")));
-
-        let (rest, text) = process_text(input)?;
-        tokens.push(HsmlToken::Text(text.to_string()));
-        input = rest;
-
-        let (rest, newline) = process_newline(input)?;
-        tokens.push(HsmlToken::Newline);
-        input = rest;
-
-        if input.is_empty() {
-            break;
-        }
-    }
-
-    Ok((input, tokens))
+    Ok((input, HsmlNode::Tag(tag_node)))
 }
 
 #[cfg(test)]

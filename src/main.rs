@@ -10,7 +10,7 @@ fn main() {
     .card__body {{ fullName }}\n
 ";
 
-    let (result, tokens) = parse(content).unwrap();
+    let (result, hsml_ast) = parse(content).unwrap();
 
-    dbg!(tokens);
+    dbg!(hsml_ast);
 }
