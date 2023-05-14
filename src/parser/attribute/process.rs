@@ -1,32 +1,120 @@
-use nom::{bytes::complete::take_till1, IResult};
+use nom::{
+    bytes::complete::{tag, take_till1},
+    error::{Error, ErrorKind},
+    IResult,
+};
 
 use crate::parser::HsmlProcessContext;
 
-pub fn process_attribute(input: &str, context: HsmlProcessContext) -> IResult<&str, &str> {
-    let mut input = input;
-    let (remaining, attribute_key) =
-        take_till1(|c: char| c.is_whitespace() || c == '.' || c == ',' || c == '\n' || c == '=')(
-            input,
-        )?;
+fn is_valid_attribute_key(c: char) -> bool {
+    c.is_alphanumeric()
+        || c == '-'
+        || c == '_'
+        || c == ':'
+        || c == '#'
+        || c == '@'
+        || c == '['
+        || c == ']'
+        || c == '('
+        || c == ')'
+        || c == '{'
+        || c == '}'
+}
 
-    let (remaining2, attribute_value) = match remaining.chars().next() {
-        Some('=') => {
-            let (remaining, attribute_value) =
-                take_till1(|c: char| c == ',' || c == '\n')(remaining)?;
+fn is_valid_attribute_key_start(c: char) -> bool {
+    c.is_alphabetic() || c == ':' || c == '#' || c == '@' || c == '[' || c == '('
+}
 
-            (remaining, Some(attribute_value))
+fn process_attribute_key(input: &str) -> IResult<&str, &str> {
+    let (remaining, attribute_key) = take_till1(|c: char| !is_valid_attribute_key(c))(input)?;
+
+    if attribute_key.chars().next().unwrap().is_numeric() {
+        return Err(nom::Err::Error(Error::new(input, ErrorKind::AlphaNumeric)));
+    }
+
+    if !is_valid_attribute_key_start(attribute_key.chars().next().unwrap()) {
+        return Err(nom::Err::Error(Error::new(input, ErrorKind::AlphaNumeric)));
+    }
+
+    Ok((remaining, attribute_key))
+}
+
+fn process_attribute_value(input: &str, context: HsmlProcessContext) -> IResult<&str, &str> {
+    // get first char
+    let first_char = input.chars().next().unwrap();
+
+    // if first char is a quote, then we need to find the closing quote and return the value in between (together with the surrounding quotes)
+    if first_char == '"' || first_char == '\'' {
+        let closing_quote = if first_char == '"' { '"' } else { '\'' };
+
+        let mut closing_quote_index = 0;
+        let mut is_escaped = false;
+
+        for (index, c) in input.chars().enumerate() {
+            if index == 0 {
+                // skip first char, because it is the opening quote
+                continue;
+            }
+
+            if c == '\\' {
+                is_escaped = true;
+                continue;
+            }
+
+            if c == closing_quote && !is_escaped {
+                closing_quote_index = index;
+                break;
+            }
+
+            is_escaped = false;
         }
-        _ => (remaining, None),
-    };
 
-    let mut attribute = attribute_key;
+        if closing_quote_index == 0 {
+            return Err(nom::Err::Error(Error::new(input, ErrorKind::Tag)));
+        }
 
-    if attribute_value.is_some() {
-        let i = attribute_key.len() + 1 + attribute_value.unwrap().len();
-        (attribute, input) = input.split_at(i);
-    };
+        let attribute_value = input.get(..closing_quote_index + 1).unwrap();
 
-    Ok((input, attribute))
+        println!("{}", attribute_value);
+
+        return Ok((
+            input.get(closing_quote_index + 1..).unwrap_or(""),
+            attribute_value,
+        ));
+    }
+
+    // otherwise it was not a valid attribute value
+    Err(nom::Err::Error(Error::new(input, ErrorKind::Tag)))
+}
+
+// An attribute key can only contain a-z, A-Z, 0-9, `-`, `_`, `:`, `#`, `@`, `[`, `]`, `(`, `)`, `{`, `}`
+// There is the special case that an attribute key can contain a dot (`.`) if it is followed by a letter
+// There is the special case that an attribute key can contain a space (` `) if it is surrounded by quotes (`"`)
+// Quotes can only contained if they are surrounded by quotes (`"`)
+// An attribute key must start with a-z, A-Z, `:`, `#`, `@`, `[`, `(`
+
+// First take until the first potential equal sign (`=`)
+//  If there is an equal sign, then test the output for being a valid attribute key
+//  If there is no equal sign, then the attribute might be a boolean attribute
+
+// If the attribute is a boolean attribute, then return the attribute and the remaining input
+
+pub fn process_attribute(input: &str, context: HsmlProcessContext) -> IResult<&str, &str> {
+    let (remaining, attribute_key) = process_attribute_key(input)?;
+
+    // check if remaining starts with an equal sign
+    if let Ok((remaining_after_equal_sign, _)) = tag::<&str, &str, Error<&str>>("=")(remaining) {
+        let (remaining_after_attribute_value, attribute_value) =
+            process_attribute_value(remaining_after_equal_sign, context)?;
+
+        let attribute = input
+            .get(..input.len() - remaining_after_attribute_value.len())
+            .unwrap();
+
+        return Ok((remaining_after_attribute_value, attribute));
+    }
+
+    Ok((remaining, attribute_key))
 }
 
 #[cfg(test)]
@@ -36,7 +124,21 @@ mod tests {
         Needed,
     };
 
-    use crate::parser::{attribute::process::process_attribute, HsmlProcessContext};
+    use crate::parser::{
+        attribute::process::{process_attribute, process_attribute_value},
+        HsmlProcessContext,
+    };
+
+    #[test]
+    fn it_should_process_attribute_value() {
+        let input = "\"https://github.com/\"";
+
+        let (rest, attribute_value) =
+            process_attribute_value(input, HsmlProcessContext::default()).unwrap();
+
+        assert_eq!(attribute_value, "\"https://github.com/\"");
+        assert_eq!(rest, "");
+    }
 
     #[test]
     fn it_should_process_attribute() {
@@ -173,7 +275,7 @@ mod tests {
         assert_eq!(
             Err(nom::Err::Error(Error {
                 input: "1src=\"https://github.com\"",
-                code: ErrorKind::TakeTill1
+                code: ErrorKind::AlphaNumeric
             })),
             process_attribute(input, HsmlProcessContext::default())
         );
@@ -223,7 +325,10 @@ mod tests {
         let input = "src=imgSrc";
 
         assert_eq!(
-            Err(nom::Err::Incomplete(Needed::Unknown)),
+            Err(nom::Err::Error(Error {
+                input: "imgSrc",
+                code: ErrorKind::Tag
+            })),
             process_attribute(input, HsmlProcessContext::default())
         );
     }
