@@ -41,7 +41,7 @@ fn process_attribute_key(input: &str) -> IResult<&str, &str> {
 
 fn process_attribute_value<'a>(
     input: &'a str,
-    context: &mut HsmlProcessContext,
+    _context: &mut HsmlProcessContext,
 ) -> IResult<&'a str, &'a str> {
     // get first char
     let first_char = input.chars().next().unwrap();
@@ -110,7 +110,7 @@ pub fn process_attribute<'a>(
 
     // check if remaining starts with an equal sign
     if let Ok((remaining_after_equal_sign, _)) = tag::<&str, &str, Error<&str>>("=")(remaining) {
-        let (remaining_after_attribute_value, attribute_value) =
+        let (remaining_after_attribute_value, _attribute_value) =
             process_attribute_value(remaining_after_equal_sign, context)?;
 
         let attribute = input

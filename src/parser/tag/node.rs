@@ -49,7 +49,7 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
             input = rest;
         }
 
-        let (_, input) = input.split_at(1);
+        let (_, _input) = input.split_at(1);
     }
 
     let text_node: Option<TextNode> = if let Ok((rest, node)) = text_node(input) {

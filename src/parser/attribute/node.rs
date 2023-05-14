@@ -16,8 +16,8 @@ pub fn attribute_node<'a>(
 ) -> IResult<&'a str, AttributeNode> {
     let (input, attribute) = process_attribute(input, context)?;
 
-    let mid = attribute.find('=').unwrap_or_else(|| attribute.len());
-    let (key, value) = attribute.split_at(mid);
+    let equal_sign_index = attribute.find('=').unwrap_or(attribute.len());
+    let (key, value) = attribute.split_at(equal_sign_index);
 
     let value = value.strip_prefix('=').map(|v| v.to_string());
 
