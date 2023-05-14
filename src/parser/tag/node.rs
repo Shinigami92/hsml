@@ -40,6 +40,9 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
 
     let mut attribute_nodes: Vec<AttributeNode> = vec![];
 
+    // TODO @Shinigami92 2023-05-14: get all the attributes between '(' and ')'
+    // This could work similar to https://github.com/Shinigami92/hsml/blob/05dfa64a56496e9afd88203c2014c6d78b38b402/src/parser/attribute/process.rs#L46-L79
+
     // if starts with '('
     if input.starts_with('(') {
         let (_, input2) = input.split_at(1);
