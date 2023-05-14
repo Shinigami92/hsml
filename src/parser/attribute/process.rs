@@ -31,7 +31,10 @@ pub fn process_attribute(input: &str, context: HsmlProcessContext) -> IResult<&s
 
 #[cfg(test)]
 mod tests {
-    use nom::error::{Error, ErrorKind};
+    use nom::{
+        error::{Error, ErrorKind},
+        Needed,
+    };
 
     use crate::parser::{attribute::process::process_attribute, HsmlProcessContext};
 
@@ -205,6 +208,32 @@ mod tests {
         assert_eq!(rest, "");
     }
 
+    #[test]
+    fn it_should_process_attribute_with_multiline_value() {
+        let input = "class=\"{
+        'is-active': isActive,
+        'is-disabled': isDisabled
+    }\"";
+
+        let (rest, attribute) = process_attribute(
+            input,
+            HsmlProcessContext {
+                indent_level: 1,
+                indent_string: "    ".to_string(),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            attribute,
+            "class=\"{
+    'is-active': isActive,
+    'is-disabled': isDisabled
+}\""
+        );
+        assert_eq!(rest, "");
+    }
+
     // Negative tests
 
     #[test]
@@ -273,6 +302,22 @@ mod tests {
                 input: ",src=\"https://github.com\"",
                 code: ErrorKind::TakeTill1
             })),
+            process_attribute(
+                input,
+                HsmlProcessContext {
+                    indent_level: 0,
+                    indent_string: "  ".to_string(),
+                }
+            )
+        );
+    }
+
+    #[test]
+    fn it_should_not_process_attribute_without_quoted_value() {
+        let input = "src=imgSrc";
+
+        assert_eq!(
+            Err(nom::Err::Incomplete(Needed::Unknown)),
             process_attribute(
                 input,
                 HsmlProcessContext {
