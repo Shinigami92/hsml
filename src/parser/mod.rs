@@ -26,6 +26,11 @@ pub enum HsmlNode {
     Text(TextNode),
 }
 
+pub struct HsmlProcessContext {
+    pub indent_level: usize,
+    pub indent_string: String,
+}
+
 pub fn process_newline(input: &str) -> IResult<&str, &str> {
     line_ending(input)
 }
