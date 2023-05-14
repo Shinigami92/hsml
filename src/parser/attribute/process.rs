@@ -39,7 +39,10 @@ fn process_attribute_key(input: &str) -> IResult<&str, &str> {
     Ok((remaining, attribute_key))
 }
 
-fn process_attribute_value(input: &str, context: HsmlProcessContext) -> IResult<&str, &str> {
+fn process_attribute_value<'a>(
+    input: &'a str,
+    context: &mut HsmlProcessContext,
+) -> IResult<&'a str, &'a str> {
     // get first char
     let first_char = input.chars().next().unwrap();
 
@@ -99,7 +102,10 @@ fn process_attribute_value(input: &str, context: HsmlProcessContext) -> IResult<
 
 // If the attribute is a boolean attribute, then return the attribute and the remaining input
 
-pub fn process_attribute(input: &str, context: HsmlProcessContext) -> IResult<&str, &str> {
+pub fn process_attribute<'a>(
+    input: &'a str,
+    context: &mut HsmlProcessContext,
+) -> IResult<&'a str, &'a str> {
     let (remaining, attribute_key) = process_attribute_key(input)?;
 
     // check if remaining starts with an equal sign
@@ -134,7 +140,7 @@ mod tests {
         let input = "\"https://github.com/\"";
 
         let (rest, attribute_value) =
-            process_attribute_value(input, HsmlProcessContext::default()).unwrap();
+            process_attribute_value(input, &mut HsmlProcessContext::default()).unwrap();
 
         assert_eq!(attribute_value, "\"https://github.com/\"");
         assert_eq!(rest, "");
@@ -144,7 +150,8 @@ mod tests {
     fn it_should_process_attribute() {
         let input = "src=\"https://github.com/\"";
 
-        let (rest, attribute) = process_attribute(input, HsmlProcessContext::default()).unwrap();
+        let (rest, attribute) =
+            process_attribute(input, &mut HsmlProcessContext::default()).unwrap();
 
         assert_eq!(attribute, "src=\"https://github.com/\"");
         assert_eq!(rest, "");
@@ -154,7 +161,8 @@ mod tests {
     fn it_should_process_attribute_without_value() {
         let input = "disabled";
 
-        let (rest, attribute) = process_attribute(input, HsmlProcessContext::default()).unwrap();
+        let (rest, attribute) =
+            process_attribute(input, &mut HsmlProcessContext::default()).unwrap();
 
         assert_eq!(attribute, "disabled");
         assert_eq!(rest, "");
@@ -164,7 +172,8 @@ mod tests {
     fn it_should_process_attribute_followed_by_another_attribute() {
         let input = "disabled required";
 
-        let (rest, attribute) = process_attribute(input, HsmlProcessContext::default()).unwrap();
+        let (rest, attribute) =
+            process_attribute(input, &mut HsmlProcessContext::default()).unwrap();
 
         assert_eq!(attribute, "disabled");
         assert_eq!(rest, " required");
@@ -174,7 +183,8 @@ mod tests {
     fn it_should_process_attribute_followed_by_another_attribute_separated_by_comma() {
         let input = "disabled, required";
 
-        let (rest, attribute) = process_attribute(input, HsmlProcessContext::default()).unwrap();
+        let (rest, attribute) =
+            process_attribute(input, &mut HsmlProcessContext::default()).unwrap();
 
         assert_eq!(attribute, "disabled");
         assert_eq!(rest, ", required");
@@ -184,7 +194,8 @@ mod tests {
     fn it_should_process_attribute_with_angular_binding() {
         let input = "color=\"{{ color }}\", required";
 
-        let (rest, attribute) = process_attribute(input, HsmlProcessContext::default()).unwrap();
+        let (rest, attribute) =
+            process_attribute(input, &mut HsmlProcessContext::default()).unwrap();
 
         assert_eq!(attribute, "color=\"{{ color }}\"");
         assert_eq!(rest, ", required");
@@ -194,7 +205,8 @@ mod tests {
     fn it_should_process_attribute_with_angular_ng_model() {
         let input = "[(ngModel)]=\"name\", required";
 
-        let (rest, attribute) = process_attribute(input, HsmlProcessContext::default()).unwrap();
+        let (rest, attribute) =
+            process_attribute(input, &mut HsmlProcessContext::default()).unwrap();
 
         assert_eq!(attribute, "[(ngModel)]=\"name\"");
         assert_eq!(rest, ", required");
@@ -204,7 +216,8 @@ mod tests {
     fn it_should_process_attribute_with_angular_event() {
         let input = "(click)=\"setValue()\", required";
 
-        let (rest, attribute) = process_attribute(input, HsmlProcessContext::default()).unwrap();
+        let (rest, attribute) =
+            process_attribute(input, &mut HsmlProcessContext::default()).unwrap();
 
         assert_eq!(attribute, "(click)=\"setValue()\"");
         assert_eq!(rest, ", required");
@@ -214,7 +227,8 @@ mod tests {
     fn it_should_process_attribute_with_vue_binding() {
         let input = ":src=\"image\", alt=\"Image\"";
 
-        let (rest, attribute) = process_attribute(input, HsmlProcessContext::default()).unwrap();
+        let (rest, attribute) =
+            process_attribute(input, &mut HsmlProcessContext::default()).unwrap();
 
         assert_eq!(attribute, ":src=\"image\"");
         assert_eq!(rest, ", alt=\"Image\"");
@@ -224,7 +238,8 @@ mod tests {
     fn it_should_process_attribute_with_vue_event() {
         let input = "@click=\"setValue()\", color=\"primary\"";
 
-        let (rest, attribute) = process_attribute(input, HsmlProcessContext::default()).unwrap();
+        let (rest, attribute) =
+            process_attribute(input, &mut HsmlProcessContext::default()).unwrap();
 
         assert_eq!(attribute, "@click=\"setValue()\"");
         assert_eq!(rest, ", color=\"primary\"");
@@ -234,7 +249,8 @@ mod tests {
     fn it_should_process_attribute_with_vue_slot() {
         let input = "#header=\"slot\"";
 
-        let (rest, attribute) = process_attribute(input, HsmlProcessContext::default()).unwrap();
+        let (rest, attribute) =
+            process_attribute(input, &mut HsmlProcessContext::default()).unwrap();
 
         assert_eq!(attribute, "#header=\"slot\"");
         assert_eq!(rest, "");
@@ -249,7 +265,7 @@ mod tests {
 
         let (rest, attribute) = process_attribute(
             input,
-            HsmlProcessContext {
+            &mut HsmlProcessContext {
                 indent_level: 1,
                 indent_string: Some("    ".to_string()),
             },
@@ -277,7 +293,7 @@ mod tests {
                 input: "1src=\"https://github.com\"",
                 code: ErrorKind::AlphaNumeric
             })),
-            process_attribute(input, HsmlProcessContext::default())
+            process_attribute(input, &mut HsmlProcessContext::default())
         );
     }
 
@@ -290,7 +306,7 @@ mod tests {
                 input: " src=\"https://github.com\"",
                 code: ErrorKind::TakeTill1
             })),
-            process_attribute(input, HsmlProcessContext::default())
+            process_attribute(input, &mut HsmlProcessContext::default())
         );
     }
 
@@ -303,7 +319,7 @@ mod tests {
                 input: ".src=\"https://github.com\"",
                 code: ErrorKind::TakeTill1
             })),
-            process_attribute(input, HsmlProcessContext::default())
+            process_attribute(input, &mut HsmlProcessContext::default())
         );
     }
 
@@ -316,7 +332,7 @@ mod tests {
                 input: ",src=\"https://github.com\"",
                 code: ErrorKind::TakeTill1
             })),
-            process_attribute(input, HsmlProcessContext::default())
+            process_attribute(input, &mut HsmlProcessContext::default())
         );
     }
 
@@ -329,7 +345,7 @@ mod tests {
                 input: "imgSrc",
                 code: ErrorKind::Tag
             })),
-            process_attribute(input, HsmlProcessContext::default())
+            process_attribute(input, &mut HsmlProcessContext::default())
         );
     }
 
@@ -342,7 +358,7 @@ mod tests {
                 input: "\nsrc=\"https://github.com\"",
                 code: ErrorKind::TakeTill1
             })),
-            process_attribute(input, HsmlProcessContext::default())
+            process_attribute(input, &mut HsmlProcessContext::default())
         );
     }
 }

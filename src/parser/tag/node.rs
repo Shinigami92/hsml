@@ -1,10 +1,11 @@
 use nom::{bytes::complete::take_till, IResult};
 
 use crate::parser::{
-    attribute::node::AttributeNode,
+    attribute::node::{attribute_node, AttributeNode},
     class::node::{class_node, ClassNode},
     tag::process::process_tag,
     text::node::{text_node, TextNode},
+    HsmlProcessContext,
 };
 
 #[derive(Debug, PartialEq)]
@@ -16,7 +17,7 @@ pub struct TagNode {
     pub children: Option<Vec<TagNode>>,
 }
 
-pub fn tag_node(input: &str) -> IResult<&str, TagNode> {
+pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult<&'a str, TagNode> {
     let (_, prev) = take_till(|c: char| c.is_ascii_alphabetic())(input)?;
 
     let (input, tag_name) = if !prev.ends_with('.') {
@@ -39,12 +40,17 @@ pub fn tag_node(input: &str) -> IResult<&str, TagNode> {
 
     let mut attribute_nodes: Vec<AttributeNode> = vec![];
 
-    println!("input: '{}'", input);
+    // if starts with '('
+    if input.starts_with('(') {
+        let (_, input2) = input.split_at(1);
 
-    // while let Ok((rest, node)) = attribute_node(input) {
-    //     attribute_nodes.push(node);
-    //     input = rest;
-    // }
+        while let Ok((rest, node)) = attribute_node(input2, context) {
+            attribute_nodes.push(node);
+            input = rest;
+        }
+
+        let (_, input) = input.split_at(1);
+    }
 
     let text_node: Option<TextNode> = if let Ok((rest, node)) = text_node(input) {
         input = rest;
@@ -55,7 +61,7 @@ pub fn tag_node(input: &str) -> IResult<&str, TagNode> {
 
     let mut children: Vec<TagNode> = vec![];
 
-    while let Ok((rest, node)) = tag_node(input) {
+    while let Ok((rest, node)) = tag_node(input, context) {
         children.push(node);
         input = rest;
     }

@@ -41,7 +41,9 @@ pub fn parse(input: &str) -> IResult<&str, RootNode> {
 
     let mut input = input;
 
-    while let Ok((rest, node)) = tag_node(input) {
+    let mut context = HsmlProcessContext::default();
+
+    while let Ok((rest, node)) = tag_node(input, &mut context) {
         nodes.push(HsmlNode::Tag(node));
         input = rest;
     }
