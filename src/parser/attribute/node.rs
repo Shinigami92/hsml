@@ -1,4 +1,7 @@
-use nom::IResult;
+use nom::{
+    bytes::complete::{tag, take_till},
+    IResult,
+};
 
 use crate::parser::HsmlProcessContext;
 
@@ -28,4 +31,83 @@ pub fn attribute_node<'a>(
             value,
         },
     ))
+}
+
+pub fn attribute_nodes<'a>(
+    input: &'a str,
+    context: &mut HsmlProcessContext,
+) -> IResult<&'a str, Vec<AttributeNode>> {
+    let (mut input, _) = tag("(")(input)?;
+
+    let mut attributes: Vec<AttributeNode> = vec![];
+
+    // loop until `)`
+    // take until attr starts (trim , and whitespace)
+    // collect attr
+    // if attr is empty, break
+    loop {
+        let (remaining, _) = take_till(|c: char| !c.is_whitespace() && c != ',')(input)?;
+
+        if remaining.starts_with(')') {
+            break;
+        }
+
+        let (remaining, attribute) = attribute_node(remaining, context)?;
+
+        attributes.push(attribute);
+        input = remaining;
+    }
+
+    let (input, _) = tag(")")(input)?;
+
+    Ok((input, attributes))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::parser::{
+        attribute::node::{attribute_node, attribute_nodes, AttributeNode},
+        HsmlProcessContext,
+    };
+
+    #[test]
+    fn it_should_return_attribute_node() {
+        let mut context = HsmlProcessContext::default();
+
+        let (input, attribute) = attribute_node("key=\"value\"", &mut context).unwrap();
+
+        assert_eq!(
+            attribute,
+            AttributeNode {
+                key: "key".to_string(),
+                value: Some("\"value\"".to_string())
+            }
+        );
+
+        assert_eq!(input, "");
+    }
+
+    #[test]
+    fn it_should_return_attribute_nodes() {
+        let mut context = HsmlProcessContext::default();
+
+        let (input, attribute_nodes) =
+            attribute_nodes("(key=\"value\", :key2=\"value2\")", &mut context).unwrap();
+
+        assert_eq!(
+            attribute_nodes,
+            vec![
+                AttributeNode {
+                    key: "key".to_string(),
+                    value: Some("\"value\"".to_string())
+                },
+                AttributeNode {
+                    key: ":key2".to_string(),
+                    value: Some("\"value2\"".to_string())
+                }
+            ]
+        );
+
+        assert_eq!(input, "");
+    }
 }

@@ -78,7 +78,7 @@ fn process_attribute_value<'a>(
 
         let attribute_value = input.get(..closing_quote_index + 1).unwrap();
 
-        println!("{}", attribute_value);
+        // println!("{}", attribute_value);
 
         return Ok((
             input.get(closing_quote_index + 1..).unwrap_or(""),
@@ -125,10 +125,7 @@ pub fn process_attribute<'a>(
 
 #[cfg(test)]
 mod tests {
-    use nom::{
-        error::{Error, ErrorKind},
-        Needed,
-    };
+    use nom::error::{Error, ErrorKind};
 
     use crate::parser::{
         attribute::process::{process_attribute, process_attribute_value},

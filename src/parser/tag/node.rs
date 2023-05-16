@@ -1,7 +1,7 @@
 use nom::{bytes::complete::take_till, IResult};
 
 use crate::parser::{
-    attribute::node::{attribute_node, AttributeNode},
+    attribute::node::{attribute_nodes, AttributeNode},
     class::node::{class_node, ClassNode},
     tag::process::process_tag,
     text::node::{text_node, TextNode},
@@ -36,24 +36,15 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
         input = rest;
     }
 
-    let (mut input, _prev) = take_till(|c| c == ' ' || c == '(' || c == '\n' || c == '\r')(input)?;
+    let (input, _prev) = take_till(|c| c == ' ' || c == '(' || c == '\n' || c == '\r')(input)?;
 
-    let mut attribute_nodes: Vec<AttributeNode> = vec![];
-
-    // TODO @Shinigami92 2023-05-14: get all the attributes between '(' and ')'
-    // This could work similar to https://github.com/Shinigami92/hsml/blob/05dfa64a56496e9afd88203c2014c6d78b38b402/src/parser/attribute/process.rs#L46-L79
-
-    // if starts with '('
-    if input.starts_with('(') {
-        let (_, input2) = input.split_at(1);
-
-        while let Ok((rest, node)) = attribute_node(input2, context) {
-            attribute_nodes.push(node);
-            input = rest;
-        }
-
-        let (_, _input) = input.split_at(1);
-    }
+    let (mut input, attribute_nodes): (&str, Option<Vec<AttributeNode>>) = if input.starts_with('(')
+    {
+        let (input, nodes) = attribute_nodes(input, context)?;
+        (input, Some(nodes))
+    } else {
+        (input, None)
+    };
 
     let text_node: Option<TextNode> = if let Ok((rest, node)) = text_node(input) {
         input = rest;
@@ -74,7 +65,7 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
         TagNode {
             tag: tag_name.to_string(),
             classes: (!class_nodes.is_empty()).then_some(class_nodes),
-            attributes: (!attribute_nodes.is_empty()).then_some(attribute_nodes),
+            attributes: attribute_nodes,
             text: text_node,
             children: (!children.is_empty()).then_some(children),
         },
