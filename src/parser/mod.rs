@@ -1,4 +1,4 @@
-use nom::{character::complete::line_ending, IResult};
+use nom::{bytes::complete::take_till, character::complete::line_ending, IResult};
 
 use self::{
     attribute::node::AttributeNode,
@@ -39,16 +39,136 @@ pub fn process_newline(input: &str) -> IResult<&str, &str> {
 pub fn parse(input: &str) -> IResult<&str, RootNode> {
     let mut nodes: Vec<HsmlNode> = vec![];
 
-    let mut input = input;
-
     let mut context = HsmlProcessContext::default();
+
+    // eat leading newlines and whitespace
+    let (mut input, _) = take_till(|c: char| !c.is_whitespace())(input)?;
+
+    // TODO @Shinigami92 2023-05-18: Add support for doctype node
+    // TODO @Shinigami92 2023-05-18: Add support for comment nodes
 
     while let Ok((rest, node)) = tag_node(input, &mut context) {
         nodes.push(HsmlNode::Tag(node));
         input = rest;
     }
 
-    // println!("input: {}", input);
+    // eat trailing newlines and whitespace if there are any
+    let (input, _) = take_till(|c: char| !c.is_whitespace())(input)?;
 
     Ok((input, RootNode { nodes }))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::parser::{
+        attribute::node::AttributeNode, class::node::ClassNode, tag::node::TagNode,
+        text::node::TextNode, HsmlNode, RootNode,
+    };
+
+    use super::parse;
+
+    #[test]
+    fn it_should_parse() {
+        let input = "h1.text-red Vite CJS Faker Demo
+  .card
+    .card__image
+      img(:src=\"natureImageUrl\" :alt=\"'Background image for ' + fullName\")
+    .card__profile
+      img(:src=\"avatarUrl\" :alt=\"'Avatar image of ' + fullName\")
+    .card__body {{ fullName }}
+";
+
+        let (input, root_node) = parse(input).unwrap();
+
+        assert_eq!(
+            root_node,
+            RootNode {
+                nodes: vec![HsmlNode::Tag(TagNode {
+                    tag: String::from("h1"),
+                    classes: Some(vec![ClassNode {
+                        name: String::from("text-red"),
+                    }]),
+                    attributes: None,
+                    text: Some(TextNode {
+                        text: String::from("Vite CJS Faker Demo"),
+                    }),
+                    children: Some(vec![TagNode {
+                        tag: String::from("div"),
+                        classes: Some(vec![ClassNode {
+                            name: String::from("card"),
+                        }]),
+                        attributes: None,
+                        text: None,
+                        children: Some(vec![
+                            TagNode {
+                                tag: String::from("div"),
+                                classes: Some(vec![ClassNode {
+                                    name: String::from("card__image"),
+                                }]),
+                                attributes: None,
+                                text: None,
+                                children: Some(vec![TagNode {
+                                    tag: String::from("img"),
+                                    classes: None,
+                                    attributes: Some(vec![
+                                        AttributeNode {
+                                            key: String::from(":src"),
+                                            value: Some(String::from("\"natureImageUrl\"")),
+                                        },
+                                        AttributeNode {
+                                            key: String::from(":alt"),
+                                            value: Some(String::from(
+                                                "\"'Background image for ' + fullName\""
+                                            )),
+                                        },
+                                    ]),
+                                    text: None,
+                                    children: None,
+                                }]),
+                            },
+                            TagNode {
+                                tag: String::from("div"),
+                                classes: Some(vec![ClassNode {
+                                    name: String::from("card__profile"),
+                                }]),
+                                attributes: None,
+                                text: None,
+                                children: Some(vec![TagNode {
+                                    tag: String::from("img"),
+                                    classes: None,
+                                    attributes: Some(vec![
+                                        AttributeNode {
+                                            key: String::from(":src"),
+                                            value: Some(String::from("\"avatarUrl\"")),
+                                        },
+                                        AttributeNode {
+                                            key: String::from(":alt"),
+                                            value: Some(String::from(
+                                                "\"'Avatar image of ' + fullName\""
+                                            )),
+                                        },
+                                    ]),
+                                    text: None,
+                                    children: None,
+                                }]),
+                            },
+                            TagNode {
+                                tag: String::from("div"),
+                                classes: Some(vec![ClassNode {
+                                    name: String::from("card__body"),
+                                }]),
+                                attributes: None,
+                                text: Some(TextNode {
+                                    text: String::from("{{ fullName }}"),
+                                }),
+                                children: None,
+                            }
+                        ]),
+                    }]),
+                })],
+            }
+        );
+
+        assert_eq!(input, "");
+    }
 }
