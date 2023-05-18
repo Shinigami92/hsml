@@ -59,6 +59,7 @@ jobs:
 
   clippy:
     name: Clippy
+    permissions: write-all
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
