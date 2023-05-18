@@ -1,5 +1,6 @@
 {
   "recommendations": [
+    "bungcip.better-toml",
     "rust-lang.rust-analyzer",
     "serayuzgur.crates",
     "vadimcn.vscode-lldb"
