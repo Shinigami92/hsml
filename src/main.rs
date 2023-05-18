@@ -1,4 +1,7 @@
-use hsml::parser::parse;
+use hsml::{
+    compiler::{compile, HsmlCompileOptions},
+    parser::parse,
+};
 
 fn main() {
     let content = "h1.text-red Vite CJS Faker Demo
@@ -12,5 +15,9 @@ fn main() {
 
     let (_, hsml_ast) = parse(content).unwrap();
 
-    dbg!(hsml_ast);
+    dbg!(&hsml_ast);
+
+    let html_content = compile(&hsml_ast, &HsmlCompileOptions::default());
+
+    dbg!(html_content);
 }
