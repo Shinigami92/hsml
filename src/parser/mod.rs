@@ -41,19 +41,34 @@ pub fn parse(input: &str) -> IResult<&str, RootNode> {
 
     let mut context = HsmlProcessContext::default();
 
-    // eat leading newlines and whitespace
-    let (mut input, _) = take_till(|c: char| !c.is_whitespace())(input)?;
+    let mut input = input;
 
-    // TODO @Shinigami92 2023-05-18: Add support for doctype node
-    // TODO @Shinigami92 2023-05-18: Add support for comment nodes
+    loop {
+        // eat leading and trailing newlines and whitespace if there are any
+        if let Ok((rest, _)) =
+            take_till::<_, &str, nom::error::Error<&str>>(|c: char| !c.is_whitespace())(input)
+        {
+            input = rest;
 
-    while let Ok((rest, node)) = tag_node(input, &mut context) {
-        nodes.push(HsmlNode::Tag(node));
-        input = rest;
+            if input.is_empty() {
+                break;
+            }
+        }
+
+        match tag_node(input, &mut context) {
+            Ok((rest, node)) => {
+                nodes.push(HsmlNode::Tag(node));
+                input = rest;
+                continue;
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+
+        // TODO @Shinigami92 2023-05-18: Add support for doctype node
+        // TODO @Shinigami92 2023-05-18: Add support for comment nodes
     }
-
-    // eat trailing newlines and whitespace if there are any
-    let (input, _) = take_till(|c: char| !c.is_whitespace())(input)?;
 
     Ok((input, RootNode { nodes }))
 }
