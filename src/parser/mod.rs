@@ -113,12 +113,12 @@ mod tests {
                                     attributes: Some(vec![
                                         AttributeNode {
                                             key: String::from(":src"),
-                                            value: Some(String::from("\"natureImageUrl\"")),
+                                            value: Some(String::from("natureImageUrl")),
                                         },
                                         AttributeNode {
                                             key: String::from(":alt"),
                                             value: Some(String::from(
-                                                "\"'Background image for ' + fullName\""
+                                                "'Background image for ' + fullName"
                                             )),
                                         },
                                     ]),
@@ -139,12 +139,12 @@ mod tests {
                                     attributes: Some(vec![
                                         AttributeNode {
                                             key: String::from(":src"),
-                                            value: Some(String::from("\"avatarUrl\"")),
+                                            value: Some(String::from("avatarUrl")),
                                         },
                                         AttributeNode {
                                             key: String::from(":alt"),
                                             value: Some(String::from(
-                                                "\"'Avatar image of ' + fullName\""
+                                                "'Avatar image of ' + fullName"
                                             )),
                                         },
                                     ]),

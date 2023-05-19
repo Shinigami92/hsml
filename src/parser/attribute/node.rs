@@ -22,7 +22,11 @@ pub fn attribute_node<'a>(
     let equal_sign_index = attribute.find('=').unwrap_or(attribute.len());
     let (key, value) = attribute.split_at(equal_sign_index);
 
-    let value = value.strip_prefix('=').map(|v| v.to_string());
+    // Remove surrounding quotes and leading `=` from value
+    let value = value
+        .strip_prefix("=\"")
+        .and_then(|v| v.strip_suffix('"'))
+        .map(|v| v.to_string());
 
     Ok((
         input,
@@ -79,8 +83,8 @@ mod tests {
         assert_eq!(
             attribute,
             AttributeNode {
-                key: "key".to_string(),
-                value: Some("\"value\"".to_string())
+                key: String::from("key"),
+                value: Some(String::from("value"))
             }
         );
 
@@ -98,12 +102,12 @@ mod tests {
             attribute_nodes,
             vec![
                 AttributeNode {
-                    key: "key".to_string(),
-                    value: Some("\"value\"".to_string())
+                    key: String::from("key"),
+                    value: Some(String::from("value"))
                 },
                 AttributeNode {
-                    key: ":key2".to_string(),
-                    value: Some("\"value2\"".to_string())
+                    key: String::from(":key2"),
+                    value: Some(String::from("value2"))
                 }
             ]
         );

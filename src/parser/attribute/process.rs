@@ -76,9 +76,9 @@ fn process_attribute_value<'a>(
             return Err(nom::Err::Error(Error::new(input, ErrorKind::Tag)));
         }
 
-        let attribute_value = input.get(..closing_quote_index + 1).unwrap();
+        let attribute_value = input.get(1..closing_quote_index).unwrap();
 
-        // println!("{}", attribute_value);
+        // dbg!(attribute_value);
 
         return Ok((
             input.get(closing_quote_index + 1..).unwrap_or(""),
@@ -139,7 +139,7 @@ mod tests {
         let (rest, attribute_value) =
             process_attribute_value(input, &mut HsmlProcessContext::default()).unwrap();
 
-        assert_eq!(attribute_value, "\"https://github.com/\"");
+        assert_eq!(attribute_value, "https://github.com/");
         assert_eq!(rest, "");
     }
 
@@ -265,7 +265,7 @@ mod tests {
             input,
             &mut HsmlProcessContext {
                 indent_level: 1,
-                indent_string: Some("    ".to_string()),
+                indent_string: Some(String::from("    ")),
             },
         )
         .unwrap();
