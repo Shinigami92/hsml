@@ -3,12 +3,14 @@ use nom::{bytes::complete::take_till, character::complete::line_ending, IResult}
 use self::{
     attribute::node::AttributeNode,
     class::node::ClassNode,
+    comment::node::{comment_dev_node, comment_native_node, CommentNode},
     tag::node::{tag_node, TagNode},
     text::node::TextNode,
 };
 
 pub mod attribute;
 pub mod class;
+pub mod comment;
 pub mod tag;
 pub mod text;
 
@@ -21,6 +23,7 @@ pub struct RootNode {
 pub enum HsmlNode {
     Root(RootNode),
     Tag(TagNode),
+    Comment(CommentNode),
     Class(ClassNode),
     Attribute(AttributeNode),
     Text(TextNode),
@@ -53,6 +56,18 @@ pub fn parse(input: &str) -> IResult<&str, RootNode> {
             if input.is_empty() {
                 break;
             }
+        }
+
+        if let Ok((rest, node)) = comment_native_node(input) {
+            nodes.push(HsmlNode::Comment(node));
+            input = rest;
+            continue;
+        }
+
+        if let Ok((rest, node)) = comment_dev_node(input) {
+            nodes.push(HsmlNode::Comment(node));
+            input = rest;
+            continue;
         }
 
         match tag_node(input, &mut context) {
@@ -107,7 +122,7 @@ mod tests {
                     text: Some(TextNode {
                         text: String::from("Vite CJS Faker Demo"),
                     }),
-                    children: Some(vec![TagNode {
+                    children: Some(vec![HsmlNode::Tag(TagNode {
                         tag: String::from("div"),
                         classes: Some(vec![ClassNode {
                             name: String::from("card"),
@@ -115,14 +130,14 @@ mod tests {
                         attributes: None,
                         text: None,
                         children: Some(vec![
-                            TagNode {
+                            HsmlNode::Tag(TagNode {
                                 tag: String::from("div"),
                                 classes: Some(vec![ClassNode {
                                     name: String::from("card__image"),
                                 }]),
                                 attributes: None,
                                 text: None,
-                                children: Some(vec![TagNode {
+                                children: Some(vec![HsmlNode::Tag(TagNode {
                                     tag: String::from("img"),
                                     classes: None,
                                     attributes: Some(vec![
@@ -139,16 +154,16 @@ mod tests {
                                     ]),
                                     text: None,
                                     children: None,
-                                }]),
-                            },
-                            TagNode {
+                                })]),
+                            }),
+                            HsmlNode::Tag(TagNode {
                                 tag: String::from("div"),
                                 classes: Some(vec![ClassNode {
                                     name: String::from("card__profile"),
                                 }]),
                                 attributes: None,
                                 text: None,
-                                children: Some(vec![TagNode {
+                                children: Some(vec![HsmlNode::Tag(TagNode {
                                     tag: String::from("img"),
                                     classes: None,
                                     attributes: Some(vec![
@@ -165,9 +180,9 @@ mod tests {
                                     ]),
                                     text: None,
                                     children: None,
-                                }]),
-                            },
-                            TagNode {
+                                })]),
+                            }),
+                            HsmlNode::Tag(TagNode {
                                 tag: String::from("div"),
                                 classes: Some(vec![ClassNode {
                                     name: String::from("card__body"),
@@ -177,9 +192,9 @@ mod tests {
                                     text: String::from("{{ fullName }}"),
                                 }),
                                 children: None,
-                            }
+                            })
                         ]),
-                    }]),
+                    })]),
                 })],
             }
         );

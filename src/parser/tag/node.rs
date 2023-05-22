@@ -7,9 +7,10 @@ use nom::{
 use crate::parser::{
     attribute::{self, node::AttributeNode},
     class::node::{class_node, ClassNode},
+    comment::node::{comment_dev_node, comment_native_node},
     tag::process::process_tag,
     text::{self, node::TextNode},
-    HsmlProcessContext,
+    HsmlNode, HsmlProcessContext,
 };
 
 #[derive(Debug, PartialEq)]
@@ -18,7 +19,7 @@ pub struct TagNode {
     pub classes: Option<Vec<ClassNode>>,
     pub attributes: Option<Vec<AttributeNode>>,
     pub text: Option<TextNode>,
-    pub children: Option<Vec<TagNode>>,
+    pub children: Option<Vec<HsmlNode>>,
 }
 
 pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult<&'a str, TagNode> {
@@ -38,7 +39,7 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
     let mut class_nodes: Vec<ClassNode> = vec![];
     let mut attribute_nodes: Option<Vec<AttributeNode>> = None;
     let mut text_node: Option<TextNode> = None;
-    let mut child_nodes: Vec<TagNode> = vec![];
+    let mut child_nodes: Vec<HsmlNode> = vec![];
 
     loop {
         let first_char = input.get(..1);
@@ -78,6 +79,8 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
             text_node = Some(node);
             input = rest;
 
+            // TODO @Shinigami92 2023-05-22: Theoretically here could also follow a comment
+
             // there could be child tag nodes, but this will be handled in the next loop iteration by the line ending check
 
             continue;
@@ -93,7 +96,7 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
             // if yes, check for indentation level
             // if no, we have no child tag nodes and can break the loop
 
-            let (rest, indentation) = take_till(|c: char| !c.is_whitespace())(rest)?;
+            let (remaining, indentation) = take_till(|c: char| !c.is_whitespace())(rest)?;
 
             if !indentation.is_empty() {
                 // check that the indentation is consistent and does not include tabs and spaces at the same time
@@ -107,6 +110,7 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
                 // if we never hit an indentation yet, set it
                 // this only happens once
                 if context.indent_string.is_none() {
+                    // println!("set indent string = \"{}\"", indentation);
                     context.indent_string = Some(indentation.to_string());
                 }
 
@@ -118,15 +122,29 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
                 // check that we are at the correct indentation level, otherwise break out of the loop
                 let indent_string_len = context.indent_string.as_ref().unwrap().len();
                 let indent_size = indent_string_len * context.indent_level;
+                // dbg!(indent_size, indentation.len());
                 if indent_size != indentation.len() {
+                    // dbg!("break out of loop");
                     break;
                 }
 
-                // now we have a child tag node
+                // we are at the correct indentation level, so we can continue parsing the child tag nodes
 
-                let (rest, node) = tag_node(rest, context)?;
-                child_nodes.push(node);
-                input = rest;
+                // there could be a comment (dev or native) node
+                if let Ok((rest, node)) = comment_native_node(remaining) {
+                    child_nodes.push(HsmlNode::Comment(node));
+                    input = rest;
+                } else if let Ok((rest, node)) = comment_dev_node(remaining) {
+                    child_nodes.push(HsmlNode::Comment(node));
+                    input = rest;
+                }
+                // or we have now a child tag node
+                else {
+                    // now we have a child tag node
+                    let (rest, node) = tag_node(remaining, context).expect("child tag node");
+                    child_nodes.push(HsmlNode::Tag(node));
+                    input = rest;
+                }
 
                 // restore the indentation level
                 context.indent_level = indentation_level;
