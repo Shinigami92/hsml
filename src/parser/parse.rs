@@ -65,12 +65,12 @@ mod tests {
     #[test]
     fn it_should_parse() {
         let input = "h1.text-red Vite CJS Faker Demo
-  .card
-    .card__image
-      img(:src=\"natureImageUrl\" :alt=\"'Background image for ' + fullName\")
-    .card__profile
-      img(:src=\"avatarUrl\" :alt=\"'Avatar image of ' + fullName\")
-    .card__body {{ fullName }}
+.card
+  .card__image
+    img(:src=\"natureImageUrl\" :alt=\"'Background image for ' + fullName\")
+  .card__profile
+    img(:src=\"avatarUrl\" :alt=\"'Avatar image of ' + fullName\")
+  .card__body {{ fullName }}
 ";
 
         let (input, root_node) = parse(input).unwrap();
@@ -78,16 +78,19 @@ mod tests {
         assert_eq!(
             root_node,
             RootNode {
-                nodes: vec![HsmlNode::Tag(TagNode {
-                    tag: String::from("h1"),
-                    classes: Some(vec![ClassNode {
-                        name: String::from("text-red"),
-                    }]),
-                    attributes: None,
-                    text: Some(TextNode {
-                        text: String::from("Vite CJS Faker Demo"),
+                nodes: vec![
+                    HsmlNode::Tag(TagNode {
+                        tag: String::from("h1"),
+                        classes: Some(vec![ClassNode {
+                            name: String::from("text-red")
+                        }]),
+                        attributes: None,
+                        text: Some(TextNode {
+                            text: String::from("Vite CJS Faker Demo"),
+                        }),
+                        children: None,
                     }),
-                    children: Some(vec![HsmlNode::Tag(TagNode {
+                    HsmlNode::Tag(TagNode {
                         tag: String::from("div"),
                         classes: Some(vec![ClassNode {
                             name: String::from("card"),
@@ -159,8 +162,8 @@ mod tests {
                                 children: None,
                             })
                         ]),
-                    })]),
-                })],
+                    }),
+                ],
             }
         );
 
