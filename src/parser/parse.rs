@@ -49,7 +49,6 @@ pub fn parse(input: &str) -> IResult<&str, RootNode> {
         }
 
         // TODO @Shinigami92 2023-05-18: Add support for doctype node
-        // TODO @Shinigami92 2023-05-18: Add support for comment nodes
     }
 
     Ok((input, RootNode { nodes }))

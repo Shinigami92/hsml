@@ -110,7 +110,7 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
                 // if we never hit an indentation yet, set it
                 // this only happens once
                 if context.indent_string.is_none() {
-                    println!("set indent string = \"{}\"", indentation);
+                    // println!("set indent string = \"{}\"", indentation);
                     context.indent_string = Some(indentation.to_string());
                 }
 

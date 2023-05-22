@@ -1,40 +1,100 @@
 use nom::{
-    bytes::complete::{is_not, tag, take_till1},
-    character::complete::char,
-    sequence::delimited,
-    IResult,
+    bytes::complete::tag,
+    error::{Error, ErrorKind},
+    IResult, Needed,
 };
-
-fn square_bracket_delimited(input: &str) -> IResult<&str, &str> {
-    delimited(char('['), is_not("]"), char(']'))(input)
-}
 
 pub fn process_class(input: &str) -> IResult<&str, &str> {
     let (input, _) = tag(".")(input)?;
-    let (remaining, class) =
-        take_till1(|c: char| c == '.' || c == '(' || c.is_whitespace())(input)?;
 
-    // Parse arbitrary tailwind values (https://tailwindcss.com/docs/adding-custom-styles#using-arbitrary-values)
-    if class.contains("[#") {
-        let (remaining2, class_prefix) = take_till1(|c: char| c == '[')(class)?;
+    let mut remaining = input;
 
-        if let Ok((_, arbitrary_value)) = square_bracket_delimited(remaining2) {
-            let i = class_prefix.len() + arbitrary_value.len() + 2;
-            let (class, _) = class.split_at(i);
+    let mut class_index = 0;
 
-            let (_, input) = input.split_at(class.len());
+    loop {
+        // get first char and check if it is a `[`
+        // if so, it is an arbitrary tailwind value
+        let first_char = remaining.get(..1);
 
-            return Ok((input, class));
+        match first_char {
+            Some("#") => {
+                // we hit a id, so we are done
+                break;
+            }
+            Some(".") => {
+                // we hit a new class, so we are done
+                break;
+            }
+            Some("(") => {
+                // we hit the start of attributes, so we are done
+                break;
+            }
+            Some(" ") => {
+                // we hit a whitespace, so we are done
+                break;
+            }
+            Some("\t") => {
+                // we hit a tab, so we are done
+                break;
+            }
+            Some("\r") if remaining.get(1..2) == Some("\n") => {
+                // we hit a newline, so we are done
+                break;
+            }
+            Some("\r") => {}
+            Some("\n") => {
+                // we hit a newline, so we are done
+                break;
+            }
+            Some("[") => {
+                // Parse arbitrary tailwind values (https://tailwindcss.com/docs/adding-custom-styles#using-arbitrary-values)
+
+                let closing_bracket = ']';
+
+                let mut closing_bracket_index = 0;
+                let mut is_escaped = false;
+
+                for (index, c) in remaining.chars().enumerate() {
+                    if index == 0 {
+                        // skip first char, because it is the opening bracket
+                        continue;
+                    }
+
+                    if c == '\\' {
+                        is_escaped = true;
+                        continue;
+                    }
+
+                    if c == closing_bracket && !is_escaped {
+                        closing_bracket_index = index;
+                        break;
+                    }
+
+                    is_escaped = false;
+                }
+
+                if closing_bracket_index == 0 {
+                    return Err(nom::Err::Error(Error::new(remaining, ErrorKind::Tag)));
+                }
+
+                class_index += closing_bracket_index;
+                remaining = input.get(class_index..).unwrap();
+
+                continue;
+            }
+            Some(_) => {
+                // we hit a char, so we need to append it to the class
+                class_index += 1;
+                remaining = remaining.get(1..).unwrap();
+                continue;
+            }
+            None => {
+                return Err(nom::Err::Incomplete(Needed::Unknown));
+            }
         }
     }
-    // Cut at id
-    else if class.contains('#') {
-        let (class, _) = class.split_at(class.find('#').unwrap());
 
-        let (_, input) = input.split_at(class.len());
-
-        return Ok((input, class));
-    }
+    let class = input.get(..class_index).unwrap();
 
     Ok((remaining, class))
 }
@@ -57,12 +117,12 @@ mod tests {
 
     #[test]
     fn it_should_process_class_with_colon() {
-        let input = ".focus:outline-none";
+        let input = ".focus:outline-none Text";
 
         let (rest, class) = process_class(input).unwrap();
 
         assert_eq!(class, "focus:outline-none");
-        assert_eq!(rest, "");
+        assert_eq!(rest, " Text");
     }
 
     #[test]
@@ -73,9 +133,26 @@ mod tests {
 
         assert_eq!(class, "bg-[#1da1f2]");
         assert_eq!(rest, "#name Text");
+    }
 
-        // TODO @Shinigami92 2023-05-10: lg:[&:nth-child(3)]:hover:underline
-        // TODO @Shinigami92 2023-05-10: bg-[url('/what_a_rush.png')]
+    #[test]
+    fn it_should_process_class_with_arbitrary_tailwind_value_2() {
+        let input = ".lg:[&:nth-child(3)]:hover:underline#name Text";
+
+        let (rest, class) = process_class(input).unwrap();
+
+        assert_eq!(class, "lg:[&:nth-child(3)]:hover:underline");
+        assert_eq!(rest, "#name Text");
+    }
+
+    #[test]
+    fn it_should_process_class_with_arbitrary_tailwind_value_3() {
+        let input = ".bg-[url('/what_a_rush.png')]#name Text";
+
+        let (rest, class) = process_class(input).unwrap();
+
+        assert_eq!(class, "bg-[url('/what_a_rush.png')]");
+        assert_eq!(rest, "#name Text");
     }
 
     #[test]
@@ -90,22 +167,22 @@ mod tests {
 
     #[test]
     fn it_should_process_class_with_attribute() {
-        let input = ".text-red(disabled)";
+        let input = ".text-red(disabled) Text";
 
         let (rest, class) = process_class(input).unwrap();
 
         assert_eq!(class, "text-red");
-        assert_eq!(rest, "(disabled)");
+        assert_eq!(rest, "(disabled) Text");
     }
 
     #[test]
     fn it_should_process_class_with_whitespace() {
-        let input = ".text-red ";
+        let input = ".text-red Text";
 
         let (rest, class) = process_class(input).unwrap();
 
         assert_eq!(class, "text-red");
-        assert_eq!(rest, " ");
+        assert_eq!(rest, " Text");
     }
 
     #[test]
@@ -142,21 +219,21 @@ mod tests {
 
     #[test]
     fn it_should_not_process_class_without_dot() {
-        let input = "text-red(disabled)";
+        let input = "text-red(disabled) Text";
 
         assert_eq!(
             Err(nom::Err::Error(Error {
-                input: "text-red(disabled)",
+                input: "text-red(disabled) Text",
                 code: ErrorKind::Tag
             })),
             process_class(input)
         );
 
-        let input = "#text-red(disabled)";
+        let input = "#text-red(disabled) Text";
 
         assert_eq!(
             Err(nom::Err::Error(Error {
-                input: "#text-red(disabled)",
+                input: "#text-red(disabled) Text",
                 code: ErrorKind::Tag
             })),
             process_class(input)
