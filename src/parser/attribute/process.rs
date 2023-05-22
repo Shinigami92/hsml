@@ -254,12 +254,12 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn it_should_process_attribute_with_multiline_value() {
-        let input = "class=\"{
+        let input = r#"class="{
         'is-active': isActive,
-        'is-disabled': isDisabled
-    }\"";
+        'is-disabled': isDisabled,
+    }"
+    :key="item.id""#;
 
         let (rest, attribute) = process_attribute(
             input,
@@ -272,12 +272,16 @@ mod tests {
 
         assert_eq!(
             attribute,
-            "class=\"{
-    'is-active': isActive,
-    'is-disabled': isDisabled
-}\""
+            r#"class="{
+        'is-active': isActive,
+        'is-disabled': isDisabled,
+    }""#
         );
-        assert_eq!(rest, "");
+        assert_eq!(
+            rest,
+            r#"
+    :key="item.id""#
+        );
     }
 
     // Negative tests
