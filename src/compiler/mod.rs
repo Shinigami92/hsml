@@ -39,7 +39,13 @@ fn compile_tag_node(tag_node: &TagNode, _options: &HsmlCompileOptions) -> String
         });
     }
 
-    html_content.push('>');
+    let should_auto_close = tag_node.children.is_none() && tag_node.text.is_none();
+    if should_auto_close {
+        html_content.push_str("/>");
+        return html_content;
+    } else {
+        html_content.push('>');
+    }
 
     if let Some(text) = &tag_node.text {
         html_content.push_str(&text.text);
@@ -103,7 +109,7 @@ pub fn compile(hsml_ast: &RootNode, options: &HsmlCompileOptions) -> String {
 mod tests {
     use crate::{
         compiler::{compile, HsmlCompileOptions},
-        parser::{tag::node::TagNode, text::node::TextNode, HsmlNode, RootNode},
+        parser::{parse::parse, tag::node::TagNode, text::node::TextNode, HsmlNode, RootNode},
     };
 
     #[test]
@@ -132,5 +138,27 @@ mod tests {
         let html_content = compile(&ast, &HsmlCompileOptions::default());
 
         assert_eq!(html_content, "<h1>Hello World</h1>");
+    }
+
+    #[test]
+    fn it_should_compile_parsed_content() {
+        let input = r#"h1.text-red Vite CJS Faker Demo
+.card
+  .card__image
+    img(:src="natureImageUrl" :alt="'Background image for ' + fullName")
+  .card__profile
+    img(:src="avatarUrl" :alt="'Avatar image of ' + fullName")
+  .card__body {{ fullName }}
+"#;
+
+        let (rest, ast) = parse(input).unwrap();
+
+        let html_content = compile(&ast, &HsmlCompileOptions::default());
+
+        assert_eq!(
+            html_content,
+            r#"<h1 class="text-red">Vite CJS Faker Demo</h1><div class="card"><div class="card__image"><img :src="natureImageUrl" :alt="'Background image for ' + fullName"/></div><div class="card__profile"><img :src="avatarUrl" :alt="'Avatar image of ' + fullName"/></div><div class="card__body">{{ fullName }}</div></div>"#
+        );
+        assert_eq!(rest, "");
     }
 }
