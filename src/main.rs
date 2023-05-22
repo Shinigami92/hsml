@@ -3,7 +3,7 @@ use std::{fs, path::PathBuf};
 use clap::{arg, command, value_parser};
 use hsml::{
     compiler::{compile, HsmlCompileOptions},
-    parser::parse,
+    parser::parse::parse,
 };
 
 fn main() {
