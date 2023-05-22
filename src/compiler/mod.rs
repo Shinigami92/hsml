@@ -13,7 +13,7 @@ fn compile_tag_node(tag_node: &TagNode, _options: &HsmlCompileOptions) -> String
     html_content.push_str(&tag_node.tag);
 
     if let Some(class_nodes) = &tag_node.classes {
-        html_content.push_str(" class=\"");
+        html_content.push_str(r#" class=""#);
 
         let class_names: String = class_nodes
             .iter()
@@ -32,7 +32,7 @@ fn compile_tag_node(tag_node: &TagNode, _options: &HsmlCompileOptions) -> String
             html_content.push_str(key);
 
             if let Some(value) = value {
-                html_content.push_str("=\"");
+                html_content.push_str(r#"=""#);
                 html_content.push_str(value);
                 html_content.push('\"');
             }

@@ -24,7 +24,7 @@ pub fn attribute_node<'a>(
 
     // Remove surrounding quotes and leading `=` from value
     let value = value
-        .strip_prefix("=\"")
+        .strip_prefix(r#"=""#)
         .and_then(|v| v.strip_suffix('"'))
         .map(|v| v.to_string());
 
@@ -78,7 +78,7 @@ mod tests {
     fn it_should_return_attribute_node() {
         let mut context = HsmlProcessContext::default();
 
-        let (input, attribute) = attribute_node("key=\"value\"", &mut context).unwrap();
+        let (input, attribute) = attribute_node(r#"key="value""#, &mut context).unwrap();
 
         assert_eq!(
             attribute,
@@ -130,7 +130,7 @@ mod tests {
         let mut context = HsmlProcessContext::default();
 
         let (input, attribute_nodes) =
-            attribute_nodes("(key=\"value\", :key2=\"value2\")", &mut context).unwrap();
+            attribute_nodes(r#"(key="value", :key2="value2")"#, &mut context).unwrap();
 
         assert_eq!(
             attribute_nodes,

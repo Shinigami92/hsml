@@ -64,14 +64,14 @@ mod tests {
 
     #[test]
     fn it_should_parse() {
-        let input = "h1.text-red Vite CJS Faker Demo
+        let input = r#"h1.text-red Vite CJS Faker Demo
 .card
   .card__image
-    img(:src=\"natureImageUrl\" :alt=\"'Background image for ' + fullName\")
+    img(:src="natureImageUrl" :alt="'Background image for ' + fullName")
   .card__profile
-    img(:src=\"avatarUrl\" :alt=\"'Avatar image of ' + fullName\")
+    img(:src="avatarUrl" :alt="'Avatar image of ' + fullName")
   .card__body {{ fullName }}
-";
+"#;
 
         let (input, root_node) = parse(input).unwrap();
 
