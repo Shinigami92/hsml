@@ -92,6 +92,40 @@ mod tests {
     }
 
     #[test]
+    fn it_should_return_attribute_node_with_multiline() {
+        let mut context = HsmlProcessContext::default();
+
+        let (input, attribute) = attribute_node(
+            r#"class="{
+        'is-active': isActive,
+        'is-disabled': isDisabled,
+    }"
+    :key="item.id""#,
+            &mut context,
+        )
+        .unwrap();
+
+        assert_eq!(
+            attribute,
+            AttributeNode {
+                key: String::from("class"),
+                value: Some(String::from(
+                    r#"{
+        'is-active': isActive,
+        'is-disabled': isDisabled,
+    }"#
+                ))
+            }
+        );
+
+        assert_eq!(
+            input,
+            r#"
+    :key="item.id""#
+        );
+    }
+
+    #[test]
     fn it_should_return_attribute_nodes() {
         let mut context = HsmlProcessContext::default();
 
@@ -109,6 +143,42 @@ mod tests {
                     key: String::from(":key2"),
                     value: Some(String::from("value2"))
                 }
+            ]
+        );
+
+        assert_eq!(input, "");
+    }
+
+    #[test]
+    fn it_should_return_attribute_nodes_with_multiline() {
+        let mut context = HsmlProcessContext::default();
+
+        let (input, attributes) = attribute_nodes(
+            r#"(class="{
+        'is-active': isActive,
+        'is-disabled': isDisabled,
+    }"
+    :key="item.id")"#,
+            &mut context,
+        )
+        .unwrap();
+
+        assert_eq!(
+            attributes,
+            vec![
+                AttributeNode {
+                    key: String::from("class"),
+                    value: Some(String::from(
+                        r#"{
+        'is-active': isActive,
+        'is-disabled': isDisabled,
+    }"#
+                    )),
+                },
+                AttributeNode {
+                    key: String::from(":key"),
+                    value: Some(String::from("item.id")),
+                },
             ]
         );
 
