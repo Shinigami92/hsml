@@ -58,8 +58,8 @@ pub fn parse(input: &str) -> IResult<&str, RootNode> {
 #[cfg(test)]
 mod tests {
     use crate::parser::{
-        attribute::node::AttributeNode, class::node::ClassNode, parse::parse, tag::node::TagNode,
-        text::node::TextNode, HsmlNode, RootNode,
+        attribute::node::AttributeNode, class::node::ClassNode, comment::node::CommentNode,
+        parse::parse, tag::node::TagNode, text::node::TextNode, HsmlNode, RootNode,
     };
 
     #[test]
@@ -161,6 +161,62 @@ mod tests {
                         ]),
                     })]),
                 })],
+            }
+        );
+
+        assert_eq!(input, "");
+    }
+
+    #[test]
+    fn it_should_parse_with_comments() {
+        let input = "// this is a root dev comment
+//! this is a root native comment (will get rendered)
+div
+    // this is a child comment
+    p another tag
+    //! this is a child comment that gets rendered
+";
+
+        let (input, root_node) = parse(input).unwrap();
+
+        assert_eq!(
+            root_node,
+            RootNode {
+                nodes: vec![
+                    HsmlNode::Comment(CommentNode {
+                        text: String::from(" this is a root dev comment"),
+                        is_dev: true,
+                    }),
+                    HsmlNode::Comment(CommentNode {
+                        text: String::from(" this is a root native comment (will get rendered)"),
+                        is_dev: false,
+                    }),
+                    HsmlNode::Tag(TagNode {
+                        tag: String::from("div"),
+                        classes: None,
+                        attributes: None,
+                        text: None,
+                        children: Some(vec![
+                            HsmlNode::Comment(CommentNode {
+                                text: String::from(" this is a child comment"),
+                                is_dev: true,
+                            }),
+                            HsmlNode::Tag(TagNode {
+                                tag: String::from("p"),
+                                classes: None,
+                                attributes: None,
+                                text: Some(TextNode {
+                                    text: String::from("another tag")
+                                }),
+                                children: None,
+                            }),
+                            HsmlNode::Comment(CommentNode {
+                                text: String::from(" this is a child comment that gets rendered"),
+                                is_dev: false,
+                            })
+                        ])
+                    })
+                ]
             }
         );
 
