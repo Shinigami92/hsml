@@ -53,6 +53,7 @@ pub fn attribute_nodes<'a>(
         let (remaining, _) = take_till(|c: char| !c.is_whitespace() && c != ',')(input)?;
 
         if remaining.starts_with(')') {
+            input = remaining;
             break;
         }
 
@@ -147,6 +148,37 @@ mod tests {
         );
 
         assert_eq!(input, "");
+    }
+
+    #[test]
+    fn it_should_return_attribute_nodes_with_wrapped() {
+        let mut context = HsmlProcessContext::default();
+
+        let (input, attribute_nodes) = attribute_nodes(
+            r#"(
+    key="value"
+    :key2="value2"
+)
+"#,
+            &mut context,
+        )
+        .unwrap();
+
+        assert_eq!(
+            attribute_nodes,
+            vec![
+                AttributeNode {
+                    key: String::from("key"),
+                    value: Some(String::from("value"))
+                },
+                AttributeNode {
+                    key: String::from(":key2"),
+                    value: Some(String::from("value2"))
+                }
+            ]
+        );
+
+        assert_eq!(input, "\n");
     }
 
     #[test]

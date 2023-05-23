@@ -224,4 +224,56 @@ div
 
         assert_eq!(input, "");
     }
+
+    #[test]
+    fn it_should_parse_wrapped_attributes() {
+        let input = r#"img.rounded-full.mx-auto(
+    src="/fancy-avatar.jpg"
+    alt="A fancy avatar"
+    width="384"
+    height="512"
+)
+"#;
+
+        let (input, root_node) = parse(input).unwrap();
+
+        assert_eq!(
+            root_node,
+            RootNode {
+                nodes: vec![HsmlNode::Tag(TagNode {
+                    tag: String::from("img"),
+                    classes: Some(vec![
+                        ClassNode {
+                            name: String::from("rounded-full"),
+                        },
+                        ClassNode {
+                            name: String::from("mx-auto"),
+                        },
+                    ]),
+                    attributes: Some(vec![
+                        AttributeNode {
+                            key: String::from("src"),
+                            value: Some(String::from("/fancy-avatar.jpg")),
+                        },
+                        AttributeNode {
+                            key: String::from("alt"),
+                            value: Some(String::from("A fancy avatar")),
+                        },
+                        AttributeNode {
+                            key: String::from("width"),
+                            value: Some(String::from("384")),
+                        },
+                        AttributeNode {
+                            key: String::from("height"),
+                            value: Some(String::from("512")),
+                        },
+                    ]),
+                    text: None,
+                    children: None,
+                })],
+            }
+        );
+
+        assert_eq!(input, "");
+    }
 }
