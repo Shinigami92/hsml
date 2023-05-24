@@ -1,40 +1,143 @@
 use nom::{
-    bytes::complete::{tag, take_till1},
+    bytes::complete::tag,
     error::{Error, ErrorKind},
-    IResult,
+    IResult, Needed,
 };
 
 use crate::parser::HsmlProcessContext;
-
-fn is_valid_attribute_key(c: char) -> bool {
-    c.is_alphanumeric()
-        || c == '-'
-        || c == '_'
-        || c == ':'
-        || c == '#'
-        || c == '@'
-        || c == '['
-        || c == ']'
-        || c == '('
-        || c == ')'
-        || c == '{'
-        || c == '}'
-}
 
 fn is_valid_attribute_key_start(c: char) -> bool {
     c.is_alphabetic() || c == ':' || c == '#' || c == '@' || c == '[' || c == '('
 }
 
 fn process_attribute_key(input: &str) -> IResult<&str, &str> {
-    let (remaining, attribute_key) = take_till1(|c: char| !is_valid_attribute_key(c))(input)?;
+    let first_char = input.chars().next().expect("input is empty");
 
-    if attribute_key.chars().next().unwrap().is_numeric() {
+    if first_char.is_numeric() {
         return Err(nom::Err::Error(Error::new(input, ErrorKind::AlphaNumeric)));
     }
 
-    if !is_valid_attribute_key_start(attribute_key.chars().next().unwrap()) {
+    if !is_valid_attribute_key_start(first_char) {
         return Err(nom::Err::Error(Error::new(input, ErrorKind::AlphaNumeric)));
     }
+
+    let mut remaining = input;
+
+    let mut attribute_key_index = 0;
+
+    loop {
+        // get first char and check if it is a `(`
+        // if so, find the closing brace, because otherwise the closing brace is the end of the attributes
+        let first_char = remaining.get(..1);
+
+        match first_char {
+            Some(")") => {
+                // we hit the end of the attributes, so we are done
+                break;
+            }
+            Some(",") => {
+                // we hit a comma, so we are done
+                break;
+            }
+            Some("=") => {
+                // we hit an equal sign, so we are done
+                break;
+            }
+            Some(" ") => {
+                // we hit a whitespace, so we are done
+                break;
+            }
+            Some("\r") if remaining.get(1..2) == Some("\n") => {
+                // we hit a newline, so we are done
+                break;
+            }
+            Some("\r") => {}
+            Some("\n") => {
+                // we hit a newline, so we are done
+                break;
+            }
+            Some("[") => {
+                // find the closing bracket
+                let closing_bracket = ']';
+
+                let mut closing_bracket_index = 0;
+                let mut is_escaped = false;
+
+                for (index, c) in remaining.chars().enumerate() {
+                    if index == 0 {
+                        // skip first char, because it is the opening bracket
+                        continue;
+                    }
+
+                    if c == '\\' {
+                        is_escaped = true;
+                        continue;
+                    }
+
+                    if c == closing_bracket && !is_escaped {
+                        closing_bracket_index = index;
+                        break;
+                    }
+
+                    is_escaped = false;
+                }
+
+                if closing_bracket_index == 0 {
+                    return Err(nom::Err::Error(Error::new(remaining, ErrorKind::Tag)));
+                }
+
+                attribute_key_index += closing_bracket_index;
+                remaining = input.get(attribute_key_index..).unwrap();
+
+                continue;
+            }
+            Some("(") => {
+                // find the closing brace
+                let closing_brace = ')';
+
+                let mut closing_brace_index = 0;
+                let mut is_escaped = false;
+
+                for (index, c) in remaining.chars().enumerate() {
+                    if index == 0 {
+                        // skip first char, because it is the opening brace
+                        continue;
+                    }
+
+                    if c == '\\' {
+                        is_escaped = true;
+                        continue;
+                    }
+
+                    if c == closing_brace && !is_escaped {
+                        closing_brace_index = index;
+                        break;
+                    }
+
+                    is_escaped = false;
+                }
+
+                if closing_brace_index == 0 {
+                    return Err(nom::Err::Error(Error::new(remaining, ErrorKind::Tag)));
+                }
+
+                attribute_key_index += closing_brace_index;
+                remaining = input.get(attribute_key_index + 1..).unwrap();
+
+                continue;
+            }
+            Some(_) => {
+                attribute_key_index += 1;
+                remaining = remaining.get(1..).unwrap();
+                continue;
+            }
+            None => {
+                return Err(nom::Err::Incomplete(Needed::Unknown));
+            }
+        }
+    }
+
+    let attribute_key = input.get(..attribute_key_index).unwrap();
 
     Ok((remaining, attribute_key))
 }
@@ -128,9 +231,19 @@ mod tests {
     use nom::error::{Error, ErrorKind};
 
     use crate::parser::{
-        attribute::process::{process_attribute, process_attribute_value},
+        attribute::process::{process_attribute, process_attribute_key, process_attribute_value},
         HsmlProcessContext,
     };
+
+    #[test]
+    fn it_should_process_attribute_key() {
+        let input = r#"#spoiler)"#;
+
+        let (rest, attribute_key) = process_attribute_key(input).unwrap();
+
+        assert_eq!(attribute_key, "#spoiler");
+        assert_eq!(rest, ")");
+    }
 
     #[test]
     fn it_should_process_attribute_value() {
@@ -156,13 +269,13 @@ mod tests {
 
     #[test]
     fn it_should_process_attribute_without_value() {
-        let input = "disabled";
+        let input = "disabled ";
 
         let (rest, attribute) =
             process_attribute(input, &mut HsmlProcessContext::default()).unwrap();
 
         assert_eq!(attribute, "disabled");
-        assert_eq!(rest, "");
+        assert_eq!(rest, " ");
     }
 
     #[test]
@@ -306,7 +419,7 @@ mod tests {
         assert_eq!(
             Err(nom::Err::Error(Error {
                 input: r#" src="https://github.com""#,
-                code: ErrorKind::TakeTill1
+                code: ErrorKind::AlphaNumeric
             })),
             process_attribute(input, &mut HsmlProcessContext::default())
         );
@@ -319,7 +432,7 @@ mod tests {
         assert_eq!(
             Err(nom::Err::Error(Error {
                 input: r#".src="https://github.com""#,
-                code: ErrorKind::TakeTill1
+                code: ErrorKind::AlphaNumeric
             })),
             process_attribute(input, &mut HsmlProcessContext::default())
         );
@@ -332,7 +445,7 @@ mod tests {
         assert_eq!(
             Err(nom::Err::Error(Error {
                 input: r#",src="https://github.com""#,
-                code: ErrorKind::TakeTill1
+                code: ErrorKind::AlphaNumeric
             })),
             process_attribute(input, &mut HsmlProcessContext::default())
         );
@@ -360,7 +473,7 @@ src="https://github.com""#;
             Err(nom::Err::Error(Error {
                 input: r#"
 src="https://github.com""#,
-                code: ErrorKind::TakeTill1
+                code: ErrorKind::AlphaNumeric
             })),
             process_attribute(input, &mut HsmlProcessContext::default())
         );

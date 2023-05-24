@@ -161,4 +161,54 @@ mod tests {
         );
         assert_eq!(rest, "");
     }
+
+    #[test]
+    fn it_should_compile_parsed_elk_status_content_component() {
+        let input = r#".space-y-3(
+  :class="{
+    'pt2 pb0.5 px3.5 bg-dm rounded-4 me--1': isDM,
+    'ms--3.5 mt--1 ms--1': isDM && context !== 'details',
+  }"
+)
+  StatusBody(v-if="(!isFiltered && isSensitiveNonSpoiler) || hideAllMedia" :status="status" :newer="newer" :with-action="!isDetails" :class="isDetails ? 'text-xl' : ''")
+  StatusSpoiler(:enabled="hasSpoilerOrSensitiveMedia || isFiltered" :filter="isFiltered" :sensitive-non-spoiler="isSensitiveNonSpoiler || hideAllMedia" :is-d-m="isDM")
+    template(v-if="spoilerTextPresent" #spoiler)
+      p {{ status.spoilerText }}
+    template(v-else-if="filterPhrase" #spoiler)
+      p {{ `${$t('status.filter_hidden_phrase')}: ${filterPhrase}` }}
+    StatusBody(v-if="!(isSensitiveNonSpoiler || hideAllMedia)" :status="status" :newer="newer" :with-action="!isDetails" :class="isDetails ? 'text-xl' : ''")
+    StatusTranslation(:status="status")
+    StatusPoll(v-if="status.poll" :status="status")
+    StatusMedia(
+      v-if="status.mediaAttachments?.length"
+      :status="status"
+      :is-preview="isPreview"
+    )
+    StatusPreviewCard(
+      v-if="status.card"
+      :card="status.card"
+      :small-picture-only="status.mediaAttachments?.length > 0"
+    )
+    StatusCard(
+      v-if="status.reblog"
+      :status="status.reblog"
+      border="~ rounded"
+      :actions="false"
+    )
+    div(v-if="isDM")
+"#;
+
+        let (rest, ast) = parse(input).unwrap();
+
+        let html_content = compile(&ast, &HsmlCompileOptions::default());
+
+        assert_eq!(
+            html_content,
+            r#"<div class="space-y-3" :class="{
+    'pt2 pb0.5 px3.5 bg-dm rounded-4 me--1': isDM,
+    'ms--3.5 mt--1 ms--1': isDM && context !== 'details',
+  }"><StatusBody v-if="(!isFiltered && isSensitiveNonSpoiler) || hideAllMedia" :status="status" :newer="newer" :with-action="!isDetails" :class="isDetails ? 'text-xl' : ''"/><StatusSpoiler :enabled="hasSpoilerOrSensitiveMedia || isFiltered" :filter="isFiltered" :sensitive-non-spoiler="isSensitiveNonSpoiler || hideAllMedia" :is-d-m="isDM"><template v-if="spoilerTextPresent" #spoiler><p>{{ status.spoilerText }}</p></template><template v-else-if="filterPhrase" #spoiler><p>{{ `${$t('status.filter_hidden_phrase')}: ${filterPhrase}` }}</p></template><StatusBody v-if="!(isSensitiveNonSpoiler || hideAllMedia)" :status="status" :newer="newer" :with-action="!isDetails" :class="isDetails ? 'text-xl' : ''"/><StatusTranslation :status="status"/><StatusPoll v-if="status.poll" :status="status"/><StatusMedia v-if="status.mediaAttachments?.length" :status="status" :is-preview="isPreview"/><StatusPreviewCard v-if="status.card" :card="status.card" :small-picture-only="status.mediaAttachments?.length > 0"/><StatusCard v-if="status.reblog" :status="status.reblog" border="~ rounded" :actions="false"/><div v-if="isDM"/></StatusSpoiler></div>"#
+        );
+        assert_eq!(rest, "");
+    }
 }
