@@ -211,4 +211,50 @@ mod tests {
         );
         assert_eq!(rest, "");
     }
+
+    #[test]
+    fn it_should_compile_parsed_elk_main_content_component() {
+        let input = r#"div(ref="container" :class="containerClass")
+  .sticky.top-0.z10.backdrop-blur.native:lg:w-[calc(100vw-5rem)].native:xl:w-[calc(135%+(100vw-1200px)/2)](
+    pt="[env(safe-area-inset-top,0)]"
+    bg="[rgba(var(--rgb-bg-base),0.7)]"
+  )
+    .flex.justify-between.px5.py2.native:xl:flex(:class="{ 'xl:hidden': $route.name !== 'tag' }" border="b base")
+      .flex.gap-3.items-center.py2.w-full(:overflow-hidden="!noOverflowHidden ? '' : false")
+        NuxtLink.items-center.btn-text.p-0.xl:hidden(
+          v-if="backOnSmallScreen || back"
+          flex="~ gap1"
+          :aria-label="$t('nav.back')"
+          @click="$router.go(-1)"
+        )
+          .rtl-flip(i-ri:arrow-left-line)
+        .flex.w-full.native-mac:justify-center.native-mac:text-center.native-mac:sm:justify-start(
+          :truncate="!noOverflowHidden ? '' : false"
+          data-tauri-drag-region
+        )
+          slot(name="title")
+        .sm:hidde.nh-7.w-1px
+      .flex.items-center.flex-shrink-0.gap-x-2
+        slot(name="actions")
+        PwaBadge.lg:hidden
+        NavUser(v-if="isHydrated")
+        NavUserSkeleton(v-else)
+    slot(name="header")
+      div(hidden)
+  PwaInstallPrompt.lg:hidden
+  .m-auto(:class="isHydrated && wideLayout ? 'xl:w-full sm:max-w-600px' : 'sm:max-w-600px md:shrink-0'")
+    .h-6(hidden :class="{ 'xl:block': $route.name !== 'tag' && !$slots.header }")
+    slot
+"#;
+
+        let (rest, ast) = parse(input).unwrap();
+
+        let html_content = compile(&ast, &HsmlCompileOptions::default());
+
+        assert_eq!(
+            html_content,
+            r#"<div ref="container" :class="containerClass"><div class="sticky top-0 z10 backdrop-blur native:lg:w-[calc(100vw-5rem)] native:xl:w-[calc(135%+(100vw-1200px)/2)]" pt="[env(safe-area-inset-top,0)]" bg="[rgba(var(--rgb-bg-base),0.7)]"><div class="flex justify-between px5 py2 native:xl:flex" :class="{ 'xl:hidden': $route.name !== 'tag' }" border="b base"><div class="flex gap-3 items-center py2 w-full" :overflow-hidden="!noOverflowHidden ? '' : false"><NuxtLink class="items-center btn-text p-0 xl:hidden" v-if="backOnSmallScreen || back" flex="~ gap1" :aria-label="$t('nav.back')" @click="$router.go(-1)"><div class="rtl-flip" i-ri:arrow-left-line/></NuxtLink><div class="flex w-full native-mac:justify-center native-mac:text-center native-mac:sm:justify-start" :truncate="!noOverflowHidden ? '' : false" data-tauri-drag-region><slot name="title"/></div><div class="sm:hidde nh-7 w-1px"/></div><div class="flex items-center flex-shrink-0 gap-x-2"><slot name="actions"/><PwaBadge class="lg:hidden"/><NavUser v-if="isHydrated"/><NavUserSkeleton v-else/></div></div><slot name="header"><div hidden/></slot></div><PwaInstallPrompt class="lg:hidden"/><div class="m-auto" :class="isHydrated && wideLayout ? 'xl:w-full sm:max-w-600px' : 'sm:max-w-600px md:shrink-0'"><div class="h-6" hidden :class="{ 'xl:block': $route.name !== 'tag' && !$slots.header }"/><slot/></div></div>"#
+        );
+        assert_eq!(rest, "");
+    }
 }
