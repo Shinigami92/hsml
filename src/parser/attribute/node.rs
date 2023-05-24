@@ -3,7 +3,7 @@ use nom::{
     IResult,
 };
 
-use crate::parser::HsmlProcessContext;
+use crate::parser::{comment::node::comment_dev_node, HsmlNode, HsmlProcessContext};
 
 use super::process::process_attribute;
 
@@ -40,10 +40,10 @@ pub fn attribute_node<'a>(
 pub fn attribute_nodes<'a>(
     input: &'a str,
     context: &mut HsmlProcessContext,
-) -> IResult<&'a str, Vec<AttributeNode>> {
+) -> IResult<&'a str, Vec<HsmlNode>> {
     let (mut input, _) = tag("(")(input)?;
 
-    let mut attributes: Vec<AttributeNode> = vec![];
+    let mut nodes: Vec<HsmlNode> = vec![];
 
     // loop until `)`
     // take until attr starts (trim , and whitespace)
@@ -57,22 +57,32 @@ pub fn attribute_nodes<'a>(
             break;
         }
 
+        // if remaining starts with `//`, it is a dev comment
+        if remaining.starts_with("//") {
+            let (remaining, comment) = comment_dev_node(remaining)?;
+            nodes.push(HsmlNode::Comment(comment));
+
+            input = remaining;
+            continue;
+        }
+
         let (remaining, attribute) = attribute_node(remaining, context)?;
 
-        attributes.push(attribute);
+        nodes.push(HsmlNode::Attribute(attribute));
         input = remaining;
     }
 
     let (input, _) = tag(")")(input)?;
 
-    Ok((input, attributes))
+    Ok((input, nodes))
 }
 
 #[cfg(test)]
 mod tests {
     use crate::parser::{
         attribute::node::{attribute_node, attribute_nodes, AttributeNode},
-        HsmlProcessContext,
+        comment::node::CommentNode,
+        HsmlNode, HsmlProcessContext,
     };
 
     #[test]
@@ -136,14 +146,14 @@ mod tests {
         assert_eq!(
             attribute_nodes,
             vec![
-                AttributeNode {
+                HsmlNode::Attribute(AttributeNode {
                     key: String::from("key"),
                     value: Some(String::from("value"))
-                },
-                AttributeNode {
+                }),
+                HsmlNode::Attribute(AttributeNode {
                     key: String::from(":key2"),
                     value: Some(String::from("value2"))
-                }
+                })
             ]
         );
 
@@ -167,14 +177,55 @@ mod tests {
         assert_eq!(
             attribute_nodes,
             vec![
-                AttributeNode {
+                HsmlNode::Attribute(AttributeNode {
                     key: String::from("key"),
                     value: Some(String::from("value"))
-                },
-                AttributeNode {
+                }),
+                HsmlNode::Attribute(AttributeNode {
                     key: String::from(":key2"),
                     value: Some(String::from("value2"))
-                }
+                })
+            ]
+        );
+
+        assert_eq!(input, "\n");
+    }
+
+    #[test]
+    fn it_should_return_attribute_nodes_with_dev_comments() {
+        let mut context = HsmlProcessContext::default();
+
+        let (input, attribute_nodes) = attribute_nodes(
+            r#"(
+    // comment 1
+    key="value"
+    // comment 2
+    :key2="value2"
+)
+"#,
+            &mut context,
+        )
+        .unwrap();
+
+        assert_eq!(
+            attribute_nodes,
+            vec![
+                HsmlNode::Comment(CommentNode {
+                    is_dev: true,
+                    text: String::from(" comment 1"),
+                }),
+                HsmlNode::Attribute(AttributeNode {
+                    key: String::from("key"),
+                    value: Some(String::from("value")),
+                }),
+                HsmlNode::Comment(CommentNode {
+                    is_dev: true,
+                    text: String::from(" comment 2"),
+                }),
+                HsmlNode::Attribute(AttributeNode {
+                    key: String::from(":key2"),
+                    value: Some(String::from("value2")),
+                }),
             ]
         );
 
@@ -198,7 +249,7 @@ mod tests {
         assert_eq!(
             attributes,
             vec![
-                AttributeNode {
+                HsmlNode::Attribute(AttributeNode {
                     key: String::from("class"),
                     value: Some(String::from(
                         r#"{
@@ -206,11 +257,11 @@ mod tests {
         'is-disabled': isDisabled,
     }"#
                     )),
-                },
-                AttributeNode {
+                }),
+                HsmlNode::Attribute(AttributeNode {
                     key: String::from(":key"),
                     value: Some(String::from("item.id")),
-                },
+                }),
             ]
         );
 

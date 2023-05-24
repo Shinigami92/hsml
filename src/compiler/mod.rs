@@ -27,15 +27,21 @@ fn compile_tag_node(tag_node: &TagNode, _options: &HsmlCompileOptions) -> String
     }
 
     if let Some(attributes) = &tag_node.attributes {
-        attributes.iter().for_each(|AttributeNode { key, value }| {
-            html_content.push(' ');
-            html_content.push_str(key);
+        attributes.iter().for_each(|node| match node {
+            HsmlNode::Attribute(AttributeNode { key, value }) => {
+                html_content.push(' ');
+                html_content.push_str(key);
 
-            if let Some(value) = value {
-                html_content.push_str(r#"=""#);
-                html_content.push_str(value);
-                html_content.push('\"');
+                if let Some(value) = value {
+                    html_content.push_str(r#"=""#);
+                    html_content.push_str(value);
+                    html_content.push('\"');
+                }
             }
+            HsmlNode::Comment(node) if node.is_dev => {
+                // do nothing
+            }
+            _ => panic!("Unsupported node type"),
         });
     }
 
@@ -149,6 +155,14 @@ mod tests {
   .card__profile
     img(:src="avatarUrl" :alt="'Avatar image of ' + fullName")
   .card__body {{ fullName }}
+  img(
+    // supports attribute inline comments
+    src="/fancy-avatar.jpg"
+    alt="Fancy Avatar"
+    // the size of the image
+    width="384"
+    height="512"
+  )
 "#;
 
         let (rest, ast) = parse(input).unwrap();
@@ -157,7 +171,7 @@ mod tests {
 
         assert_eq!(
             html_content,
-            r#"<h1 class="text-red">Vite CJS Faker Demo</h1><div class="card"><div class="card__image"><img :src="natureImageUrl" :alt="'Background image for ' + fullName"/></div><div class="card__profile"><img :src="avatarUrl" :alt="'Avatar image of ' + fullName"/></div><div class="card__body">{{ fullName }}</div></div>"#
+            r#"<h1 class="text-red">Vite CJS Faker Demo</h1><div class="card"><div class="card__image"><img :src="natureImageUrl" :alt="'Background image for ' + fullName"/></div><div class="card__profile"><img :src="avatarUrl" :alt="'Avatar image of ' + fullName"/></div><div class="card__body">{{ fullName }}</div><img src="/fancy-avatar.jpg" alt="Fancy Avatar" width="384" height="512"/></div>"#
         );
         assert_eq!(rest, "");
     }

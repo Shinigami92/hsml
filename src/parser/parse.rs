@@ -108,16 +108,16 @@ mod tests {
                                     tag: String::from("img"),
                                     classes: None,
                                     attributes: Some(vec![
-                                        AttributeNode {
+                                        HsmlNode::Attribute(AttributeNode {
                                             key: String::from(":src"),
                                             value: Some(String::from("natureImageUrl")),
-                                        },
-                                        AttributeNode {
+                                        }),
+                                        HsmlNode::Attribute(AttributeNode {
                                             key: String::from(":alt"),
                                             value: Some(String::from(
                                                 "'Background image for ' + fullName"
                                             )),
-                                        },
+                                        }),
                                     ]),
                                     text: None,
                                     children: None,
@@ -134,16 +134,16 @@ mod tests {
                                     tag: String::from("img"),
                                     classes: None,
                                     attributes: Some(vec![
-                                        AttributeNode {
+                                        HsmlNode::Attribute(AttributeNode {
                                             key: String::from(":src"),
                                             value: Some(String::from("avatarUrl")),
-                                        },
-                                        AttributeNode {
+                                        }),
+                                        HsmlNode::Attribute(AttributeNode {
                                             key: String::from(":alt"),
                                             value: Some(String::from(
                                                 "'Avatar image of ' + fullName"
                                             )),
-                                        },
+                                        }),
                                     ]),
                                     text: None,
                                     children: None,
@@ -171,13 +171,21 @@ mod tests {
 
     #[test]
     fn it_should_parse_with_comments() {
-        let input = "// this is a root dev comment
+        let input = r#"// this is a root dev comment
 //! this is a root native comment (will get rendered)
 div
     // this is a child comment
     p another tag
     //! this is a child comment that gets rendered
-";
+    img(
+        // supports attribute inline comments
+        src="/fancy-avatar.jpg"
+        alt="Fancy Avatar"
+        // the size of the image
+        width="384"
+        height="512"
+    )
+"#;
 
         let (input, root_node) = parse(input).unwrap();
 
@@ -215,7 +223,39 @@ div
                             HsmlNode::Comment(CommentNode {
                                 text: String::from(" this is a child comment that gets rendered"),
                                 is_dev: false,
-                            })
+                            }),
+                            HsmlNode::Tag(TagNode {
+                                tag: String::from("img"),
+                                classes: None,
+                                attributes: Some(vec![
+                                    HsmlNode::Comment(CommentNode {
+                                        text: String::from(" supports attribute inline comments"),
+                                        is_dev: true,
+                                    }),
+                                    HsmlNode::Attribute(AttributeNode {
+                                        key: String::from("src"),
+                                        value: Some(String::from("/fancy-avatar.jpg")),
+                                    }),
+                                    HsmlNode::Attribute(AttributeNode {
+                                        key: String::from("alt"),
+                                        value: Some(String::from("Fancy Avatar")),
+                                    }),
+                                    HsmlNode::Comment(CommentNode {
+                                        text: String::from(" the size of the image"),
+                                        is_dev: true,
+                                    }),
+                                    HsmlNode::Attribute(AttributeNode {
+                                        key: String::from("width"),
+                                        value: Some(String::from("384")),
+                                    }),
+                                    HsmlNode::Attribute(AttributeNode {
+                                        key: String::from("height"),
+                                        value: Some(String::from("512")),
+                                    }),
+                                ]),
+                                text: None,
+                                children: None,
+                            }),
                         ])
                     })
                 ]
@@ -251,22 +291,22 @@ div
                         },
                     ]),
                     attributes: Some(vec![
-                        AttributeNode {
+                        HsmlNode::Attribute(AttributeNode {
                             key: String::from("src"),
                             value: Some(String::from("/fancy-avatar.jpg")),
-                        },
-                        AttributeNode {
+                        }),
+                        HsmlNode::Attribute(AttributeNode {
                             key: String::from("alt"),
                             value: Some(String::from("A fancy avatar")),
-                        },
-                        AttributeNode {
+                        }),
+                        HsmlNode::Attribute(AttributeNode {
                             key: String::from("width"),
                             value: Some(String::from("384")),
-                        },
-                        AttributeNode {
+                        }),
+                        HsmlNode::Attribute(AttributeNode {
                             key: String::from("height"),
                             value: Some(String::from("512")),
-                        },
+                        }),
                     ]),
                     text: None,
                     children: None,

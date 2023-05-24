@@ -5,7 +5,7 @@ use nom::{
 };
 
 use crate::parser::{
-    attribute::{self, node::AttributeNode},
+    attribute,
     class::node::{class_node, ClassNode},
     comment::node::{comment_dev_node, comment_native_node},
     tag::process::process_tag,
@@ -17,7 +17,7 @@ use crate::parser::{
 pub struct TagNode {
     pub tag: String,
     pub classes: Option<Vec<ClassNode>>,
-    pub attributes: Option<Vec<AttributeNode>>,
+    pub attributes: Option<Vec<HsmlNode>>,
     pub text: Option<TextNode>,
     pub children: Option<Vec<HsmlNode>>,
 }
@@ -37,7 +37,7 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
     // collect id and class nodes until we hit a whitespace, newline, start of attributes or single dot without trailing alphabetical char
 
     let mut class_nodes: Vec<ClassNode> = vec![];
-    let mut attribute_nodes: Option<Vec<AttributeNode>> = None;
+    let mut attribute_nodes: Option<Vec<HsmlNode>> = None;
     let mut text_node: Option<TextNode> = None;
     let mut child_nodes: Vec<HsmlNode> = vec![];
 
