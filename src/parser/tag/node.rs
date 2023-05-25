@@ -8,6 +8,7 @@ use crate::parser::{
     attribute,
     class::node::{class_node, ClassNode},
     comment::node::{comment_dev_node, comment_native_node},
+    id::{self, node::IdNode},
     tag::process::process_tag,
     text::{self, node::TextNode},
     HsmlNode, HsmlProcessContext,
@@ -16,6 +17,7 @@ use crate::parser::{
 #[derive(Debug, PartialEq)]
 pub struct TagNode {
     pub tag: String,
+    pub id: Option<IdNode>,
     pub classes: Option<Vec<ClassNode>>,
     pub attributes: Option<Vec<HsmlNode>>,
     pub text: Option<TextNode>,
@@ -36,6 +38,7 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
     // if the next char is a dot, we have a class node
     // collect id and class nodes until we hit a whitespace, newline, start of attributes or single dot without trailing alphabetical char
 
+    let mut id_node: Option<IdNode> = None;
     let mut class_nodes: Vec<ClassNode> = vec![];
     let mut attribute_nodes: Option<Vec<HsmlNode>> = None;
     let mut text_node: Option<TextNode> = None;
@@ -48,7 +51,18 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
         if first_char == Some("#") {
             // we hit an id node
 
-            todo!("id nodes are not supported yet");
+            // if there was already an id node, throw an error
+            if id_node.is_some() {
+                // TODO @Shinigami92 2023-05-25: This error could be more specific
+                // Duplicate attribute "id" is not allowed.
+                return Err(nom::Err::Failure(Error::new(input, ErrorKind::Tag)));
+            }
+
+            let (rest, node) = id::node::id_node(input)?;
+            id_node = Some(node);
+            input = rest;
+
+            continue;
         }
 
         if first_char == Some(".") {
@@ -166,6 +180,7 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
         input,
         TagNode {
             tag: tag_name.to_string(),
+            id: id_node,
             classes: (!class_nodes.is_empty()).then_some(class_nodes),
             attributes: attribute_nodes,
             text: text_node,

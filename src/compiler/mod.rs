@@ -12,6 +12,12 @@ fn compile_tag_node(tag_node: &TagNode, _options: &HsmlCompileOptions) -> String
     html_content.push('<');
     html_content.push_str(&tag_node.tag);
 
+    if let Some(id_node) = &tag_node.id {
+        html_content.push_str(r#" id=""#);
+        html_content.push_str(&id_node.id);
+        html_content.push('\"');
+    }
+
     if let Some(class_nodes) = &tag_node.classes {
         html_content.push_str(r#" class=""#);
 
@@ -115,7 +121,10 @@ pub fn compile(hsml_ast: &RootNode, options: &HsmlCompileOptions) -> String {
 mod tests {
     use crate::{
         compiler::{compile, HsmlCompileOptions},
-        parser::{parse::parse, tag::node::TagNode, text::node::TextNode, HsmlNode, RootNode},
+        parser::{
+            id::node::IdNode, parse::parse, tag::node::TagNode, text::node::TextNode, HsmlNode,
+            RootNode,
+        },
     };
 
     #[test]
@@ -132,6 +141,7 @@ mod tests {
         let ast = RootNode {
             nodes: vec![HsmlNode::Tag(TagNode {
                 tag: String::from("h1"),
+                id: None,
                 classes: None,
                 attributes: None,
                 text: Some(TextNode {
@@ -144,6 +154,28 @@ mod tests {
         let html_content = compile(&ast, &HsmlCompileOptions::default());
 
         assert_eq!(html_content, "<h1>Hello World</h1>");
+    }
+
+    #[test]
+    fn it_should_compile_content_with_id() {
+        let ast = RootNode {
+            nodes: vec![HsmlNode::Tag(TagNode {
+                tag: String::from("h1"),
+                id: Some(IdNode {
+                    id: String::from("title"),
+                }),
+                classes: None,
+                attributes: None,
+                text: Some(TextNode {
+                    text: String::from("Hello World"),
+                }),
+                children: None,
+            })],
+        };
+
+        let html_content = compile(&ast, &HsmlCompileOptions::default());
+
+        assert_eq!(html_content, r#"<h1 id="title">Hello World</h1>"#);
     }
 
     #[test]
