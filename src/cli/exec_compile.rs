@@ -15,12 +15,12 @@ pub fn exec_compile(matches: &ArgMatches) -> Result<(), &str> {
     let path = path.unwrap_or(&fallback_path);
 
     if path.is_dir() {
-        compile_hsml_files_in_dir(path)?
+        compile_hsml_files_in_dir(path)
     } else if path.is_file() {
-        compile_file(path, out)?
+        compile_file(path, out)
+    } else {
+        Err("Path must be a file or directory")
     }
-
-    Err("Path must be a file or directory")
 }
 
 fn compile_file(file: &PathBuf, out_file: Option<&PathBuf>) -> Result<(), &'static str> {
@@ -35,7 +35,8 @@ fn compile_file(file: &PathBuf, out_file: Option<&PathBuf>) -> Result<(), &'stat
     }
 
     // check that file ends with .hsml
-    if file.ends_with(".hsml") {
+    let extension = file.extension();
+    if extension.is_none() || extension.unwrap() != "hsml" {
         return Err("File must have .hsml extension");
     }
 
