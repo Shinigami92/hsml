@@ -141,9 +141,12 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
                 // or we have now a child tag node
                 else {
                     // now we have a child tag node
-                    let (rest, node) = tag_node(remaining, context).expect("child tag node");
-                    child_nodes.push(HsmlNode::Tag(node));
-                    input = rest;
+                    if let Ok((rest, node)) = tag_node(remaining, context) {
+                        child_nodes.push(HsmlNode::Tag(node));
+                        input = rest;
+                    } else {
+                        return Err(nom::Err::Error(Error::new(input, ErrorKind::Tag)));
+                    }
                 }
 
                 // restore the indentation level
