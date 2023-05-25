@@ -35,10 +35,9 @@ fn compile_file(file: &PathBuf, out_file: Option<&PathBuf>) -> Result<(), &'stat
     }
 
     // check that file ends with .hsml
-    let extension = file.extension();
-    if extension.is_none() || extension.unwrap() != "hsml" {
-        return Err("File must have .hsml extension");
-    }
+    file.extension()
+        .filter(|&ext| ext == "hsml")
+        .ok_or("File must have .hsml extension")?;
 
     println!("Compiling file {}...", file.display());
 
