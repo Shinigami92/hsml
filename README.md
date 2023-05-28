@@ -1,4 +1,16 @@
 <p>
+  <a href="https://crates.io/crates/hsml" target="_blank">
+    <img alt="NPM package" src="https://img.shields.io/crates/v/hsml.svg">
+  </a>
+  <a href="https://crates.io/crates/hsml" target="_blank">
+    <img alt="Downloads" src="https://img.shields.io/crates/d/hsml.svg">
+  </a>
+  <a href="https://www.npmjs.com/package/hsml" target="_blank">
+    <img alt="NPM package" src="https://img.shields.io/npm/v/hsml.svg">
+  </a>
+  <a href="https://www.npmjs.com/package/hsml" target="_blank">
+    <img alt="Downloads" src="https://img.shields.io/npm/dt/hsml.svg">
+  </a>
   <a href="https://github.com/Shinigami92/hsml/actions/workflows/ci.yml">
     <img alt="Build Status" src="https://github.com/Shinigami92/hsml/actions/workflows/ci.yml/badge.svg?branch=main">
   </a>
@@ -12,7 +24,7 @@
 
 # UNDER CONSTRUCTION
 
-Right now there is no usable version of `hsml` available. I'm just working on it.
+Right now there is no stable version of `hsml` available. I'm just working on it.
 
 <img src="https://chronicle-brightspot.s3.amazonaws.com/6a/c4/00e4ab3143f7e0cf4d9fd33aa00b/constructocat2.jpg" width="400px" />
 
