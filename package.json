@@ -1,0 +1,11 @@
+{
+  "name": "hsml",
+  "version": "1.0.0",
+  "description": "hsml",
+  "main": "index.js",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node index.js"
+  }
+}
