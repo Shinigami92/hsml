@@ -7,7 +7,20 @@ description = "A pug-inspired HTML preprocessor"
 repository = "https://github.com/Shinigami92/hsml"
 license = "MIT"
 keywords = ["hsml", "html", "preprocessor"]
-categories = ["api-bindings", "command-line-utilities", "compilers", "parser-implementations"]
+categories = [
+    "api-bindings",
+    "command-line-utilities",
+    "compilers",
+    "parser-implementations",
+]
+exclude = [
+    "/.github",
+    "/.vscode",
+    "example.hsml",
+    "example2.hsml",
+    "finite_state_machine.dot",
+    "notes.md",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
