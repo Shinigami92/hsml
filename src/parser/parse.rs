@@ -56,6 +56,8 @@ pub fn parse(input: &str) -> IResult<&str, RootNode> {
 
 #[cfg(test)]
 mod tests {
+    use nom::error::{Error, ErrorKind};
+
     use crate::parser::{
         attribute::node::AttributeNode, class::node::ClassNode, comment::node::CommentNode,
         parse::parse, tag::node::TagNode, text::node::TextNode, HsmlNode, RootNode,
@@ -80,6 +82,7 @@ mod tests {
                 nodes: vec![
                     HsmlNode::Tag(TagNode {
                         tag: String::from("h1"),
+                        id: None,
                         classes: Some(vec![ClassNode {
                             name: String::from("text-red")
                         }]),
@@ -91,6 +94,7 @@ mod tests {
                     }),
                     HsmlNode::Tag(TagNode {
                         tag: String::from("div"),
+                        id: None,
                         classes: Some(vec![ClassNode {
                             name: String::from("card"),
                         }]),
@@ -99,6 +103,7 @@ mod tests {
                         children: Some(vec![
                             HsmlNode::Tag(TagNode {
                                 tag: String::from("div"),
+                                id: None,
                                 classes: Some(vec![ClassNode {
                                     name: String::from("card__image"),
                                 }]),
@@ -106,6 +111,7 @@ mod tests {
                                 text: None,
                                 children: Some(vec![HsmlNode::Tag(TagNode {
                                     tag: String::from("img"),
+                                    id: None,
                                     classes: None,
                                     attributes: Some(vec![
                                         HsmlNode::Attribute(AttributeNode {
@@ -125,6 +131,7 @@ mod tests {
                             }),
                             HsmlNode::Tag(TagNode {
                                 tag: String::from("div"),
+                                id: None,
                                 classes: Some(vec![ClassNode {
                                     name: String::from("card__profile"),
                                 }]),
@@ -132,6 +139,7 @@ mod tests {
                                 text: None,
                                 children: Some(vec![HsmlNode::Tag(TagNode {
                                     tag: String::from("img"),
+                                    id: None,
                                     classes: None,
                                     attributes: Some(vec![
                                         HsmlNode::Attribute(AttributeNode {
@@ -151,6 +159,7 @@ mod tests {
                             }),
                             HsmlNode::Tag(TagNode {
                                 tag: String::from("div"),
+                                id: None,
                                 classes: Some(vec![ClassNode {
                                     name: String::from("card__body"),
                                 }]),
@@ -203,6 +212,7 @@ div
                     }),
                     HsmlNode::Tag(TagNode {
                         tag: String::from("div"),
+                        id: None,
                         classes: None,
                         attributes: None,
                         text: None,
@@ -213,6 +223,7 @@ div
                             }),
                             HsmlNode::Tag(TagNode {
                                 tag: String::from("p"),
+                                id: None,
                                 classes: None,
                                 attributes: None,
                                 text: Some(TextNode {
@@ -226,6 +237,7 @@ div
                             }),
                             HsmlNode::Tag(TagNode {
                                 tag: String::from("img"),
+                                id: None,
                                 classes: None,
                                 attributes: Some(vec![
                                     HsmlNode::Comment(CommentNode {
@@ -282,6 +294,7 @@ div
             RootNode {
                 nodes: vec![HsmlNode::Tag(TagNode {
                     tag: String::from("img"),
+                    id: None,
                     classes: Some(vec![
                         ClassNode {
                             name: String::from("rounded-full"),
@@ -315,5 +328,20 @@ div
         );
 
         assert_eq!(input, "");
+    }
+
+    // Negative tests
+
+    #[test]
+    fn it_should_not_parse_tag_with_multiple_ids() {
+        let input = r#"div#id1#id2"#;
+
+        assert_eq!(
+            Err(nom::Err::Failure(Error {
+                input: "#id2",
+                code: ErrorKind::Tag
+            })),
+            parse(input)
+        );
     }
 }
