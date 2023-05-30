@@ -91,7 +91,7 @@ fn compile_comment_node(comment_node: &CommentNode, _options: &HsmlCompileOption
 
     html_content.push_str("<!--");
     html_content.push_str(&comment_node.text);
-    html_content.push_str("-->");
+    html_content.push_str(" -->");
 
     html_content
 }
@@ -187,14 +187,6 @@ mod tests {
   .card__profile
     img(:src="avatarUrl" :alt="'Avatar image of ' + fullName")
   .card__body {{ fullName }}
-  img(
-    // supports attribute inline comments
-    src="/fancy-avatar.jpg"
-    alt="Fancy Avatar"
-    // the size of the image
-    width="384"
-    height="512"
-  )
 "#;
 
         let (rest, ast) = parse(input).unwrap();
@@ -203,7 +195,45 @@ mod tests {
 
         assert_eq!(
             html_content,
-            r#"<h1 class="text-red">Vite CJS Faker Demo</h1><div class="card"><div class="card__image"><img :src="natureImageUrl" :alt="'Background image for ' + fullName"/></div><div class="card__profile"><img :src="avatarUrl" :alt="'Avatar image of ' + fullName"/></div><div class="card__body">{{ fullName }}</div><img src="/fancy-avatar.jpg" alt="Fancy Avatar" width="384" height="512"/></div>"#
+            r#"<h1 class="text-red">Vite CJS Faker Demo</h1><div class="card"><div class="card__image"><img :src="natureImageUrl" :alt="'Background image for ' + fullName"/></div><div class="card__profile"><img :src="avatarUrl" :alt="'Avatar image of ' + fullName"/></div><div class="card__body">{{ fullName }}</div></div>"#
+        );
+        assert_eq!(rest, "");
+    }
+
+    #[test]
+    fn it_should_compile_parsed_content_2() {
+        let input = r#"//! test comment on root layer
+figure.md:flex.bg-slate-100.rounded-xl.p-8.md:p-0.dark:bg-slate-800/10
+  //! test comment
+  img.w-24.h-24.md:w-48.md:h-auto.md:rounded-none.rounded-full.mx-auto(
+    // supports attribute inline comments
+    src="/fancy-avatar.jpg"
+    alt=""
+    width="384"
+    height="512"
+  )
+  div.pt-6.md:p-8.text-center.md:text-left.space-y-4
+    blockquote(v-if="showBlockquote")
+      p.text-lg.font-medium.
+        "Tailwind CSS is the only framework that I've seen scale
+        on large teams. It's easy to customize, adapts to any design,
+        and the build size is tiny."
+    figcaption.font-medium
+      .text-sky-500.dark:text-sky-400.
+        Sarah Dayan
+      .text-[#af05c9].dark:text-slate-500.
+        Staff Engineer, Algolia
+"#;
+
+        let (rest, ast) = parse(input).unwrap();
+
+        let html_content = compile(&ast, &HsmlCompileOptions::default());
+
+        assert_eq!(
+            html_content,
+            r#"<!-- test comment on root layer --><figure class="md:flex bg-slate-100 rounded-xl p-8 md:p-0 dark:bg-slate-800/10"><!-- test comment --><img class="w-24 h-24 md:w-48 md:h-auto md:rounded-none rounded-full mx-auto" src="/fancy-avatar.jpg" alt="" width="384" height="512"/><div class="pt-6 md:p-8 text-center md:text-left space-y-4"><blockquote v-if="showBlockquote"><p class="text-lg font-medium">"Tailwind CSS is the only framework that I've seen scale
+on large teams. It's easy to customize, adapts to any design,
+and the build size is tiny."</p></blockquote><figcaption class="font-medium"><div class="text-sky-500 dark:text-sky-400">Sarah Dayan</div><div class="text-[#af05c9] dark:text-slate-500">Staff Engineer, Algolia</div></figcaption></div></figure>"#
         );
         assert_eq!(rest, "");
     }

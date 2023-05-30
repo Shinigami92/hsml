@@ -66,7 +66,14 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
         }
 
         if first_char == Some(".") {
-            // TODO @Shinigami92 2023-05-18: Maybe we want to support piped text. That would start with a `.\n`
+            if first_two_chars == Some(".\n") {
+                // we hit piped text
+                let (rest, node) = text::node::text_block_node(input, context)?;
+                text_node = Some(node);
+                input = rest;
+
+                break;
+            }
 
             // we hit a class node
             let (rest, node) = class_node(input)?;
@@ -97,7 +104,7 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
 
             // there could be child tag nodes, but this will be handled in the next loop iteration by the line ending check
 
-            continue;
+            break;
         }
 
         if first_char == Some("\n") || first_two_chars == Some("\r\n") {
@@ -187,4 +194,59 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
             children: (!child_nodes.is_empty()).then_some(child_nodes),
         },
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::parser::{
+        class::node::ClassNode,
+        tag::node::{tag_node, TagNode},
+        text::node::TextNode,
+        HsmlProcessContext,
+    };
+
+    #[test]
+    fn it_should_return_tag_node_with_piped_text() {
+        let context = &mut HsmlProcessContext {
+            indent_level: 3,
+            indent_string: Some(String::from("  ")),
+        };
+
+        let (input, tag) = tag_node(
+            r#"p.text-lg.font-medium.
+        "Tailwind CSS is the only framework that I've seen scale
+        on large teams. It's easy to customize, adapts to any design,
+        and the build size is tiny."
+    figcaption.font-medium"#,
+            context,
+        )
+        .unwrap();
+
+        assert_eq!(
+            tag,
+            TagNode {
+                tag: String::from("p"),
+                id: None,
+                classes: Some(vec![
+                    ClassNode {
+                        name: String::from("text-lg"),
+                    },
+                    ClassNode {
+                        name: String::from("font-medium"),
+                    },
+                ]),
+                attributes: None,
+                text: Some(TextNode {
+                    text: String::from(
+                        r#""Tailwind CSS is the only framework that I've seen scale
+on large teams. It's easy to customize, adapts to any design,
+and the build size is tiny.""#
+                    ),
+                }),
+                children: None,
+            }
+        );
+
+        assert_eq!(input, "\n    figcaption.font-medium");
+    }
 }
