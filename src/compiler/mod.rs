@@ -91,7 +91,7 @@ fn compile_comment_node(comment_node: &CommentNode, _options: &HsmlCompileOption
 
     html_content.push_str("<!--");
     html_content.push_str(&comment_node.text);
-    html_content.push_str("-->");
+    html_content.push_str(" -->");
 
     html_content
 }
@@ -203,26 +203,26 @@ mod tests {
     #[test]
     fn it_should_compile_parsed_content_2() {
         let input = r#"//! test comment on root layer
-        figure.md:flex.bg-slate-100.rounded-xl.p-8.md:p-0.dark:bg-slate-800/10
-          //! test comment
-          img.w-24.h-24.md:w-48.md:h-auto.md:rounded-none.rounded-full.mx-auto(
-            // supports attribute inline comments
-            src="/fancy-avatar.jpg"
-            alt=""
-            width="384"
-            height="512"
-          )
-          div.pt-6.md:p-8.text-center.md:text-left.space-y-4
-            blockquote(v-if="showBlockquote")
-              p.text-lg.font-medium.
-                "Tailwind CSS is the only framework that I've seen scale
-                on large teams. It's easy to customize, adapts to any design,
-                and the build size is tiny."
-            figcaption.font-medium
-              .text-sky-500.dark:text-sky-400.
-                Sarah Dayan
-              .text-[#af05c9].dark:text-slate-500.
-                Staff Engineer, Algolia
+figure.md:flex.bg-slate-100.rounded-xl.p-8.md:p-0.dark:bg-slate-800/10
+  //! test comment
+  img.w-24.h-24.md:w-48.md:h-auto.md:rounded-none.rounded-full.mx-auto(
+    // supports attribute inline comments
+    src="/fancy-avatar.jpg"
+    alt=""
+    width="384"
+    height="512"
+  )
+  div.pt-6.md:p-8.text-center.md:text-left.space-y-4
+    blockquote(v-if="showBlockquote")
+      p.text-lg.font-medium.
+        "Tailwind CSS is the only framework that I've seen scale
+        on large teams. It's easy to customize, adapts to any design,
+        and the build size is tiny."
+    figcaption.font-medium
+      .text-sky-500.dark:text-sky-400.
+        Sarah Dayan
+      .text-[#af05c9].dark:text-slate-500.
+        Staff Engineer, Algolia
 "#;
 
         let (rest, ast) = parse(input).unwrap();

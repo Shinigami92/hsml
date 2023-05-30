@@ -15,12 +15,19 @@ pub fn text_block_node<'a>(
 ) -> IResult<&'a str, TextNode> {
     let (input, text) = process_text_block(input, context)?;
 
-    Ok((
-        input,
-        TextNode {
-            text: text.to_string(),
-        },
-    ))
+    let indent_string = context
+        .indent_string
+        .as_ref()
+        .unwrap()
+        .repeat(context.indent_level + 1);
+
+    let newline_indent_replacement: &str = &format!("\n{}", &indent_string);
+
+    let text = text
+        .trim_start_matches(&indent_string)
+        .replace(newline_indent_replacement, "\n");
+
+    Ok((input, TextNode { text }))
 }
 
 pub fn text_node(input: &str) -> IResult<&str, TextNode> {
@@ -62,9 +69,9 @@ mod tests {
             text_block,
             TextNode {
                 text: String::from(
-                    r#"        "Tailwind CSS is the only framework that I've seen scale
-        on large teams. It's easy to customize, adapts to any design,
-        and the build size is tiny.""#
+                    r#""Tailwind CSS is the only framework that I've seen scale
+on large teams. It's easy to customize, adapts to any design,
+and the build size is tiny.""#
                 ),
             }
         );

@@ -238,9 +238,9 @@ mod tests {
                 attributes: None,
                 text: Some(TextNode {
                     text: String::from(
-                        r#"        "Tailwind CSS is the only framework that I've seen scale
-        on large teams. It's easy to customize, adapts to any design,
-        and the build size is tiny.""#
+                        r#""Tailwind CSS is the only framework that I've seen scale
+on large teams. It's easy to customize, adapts to any design,
+and the build size is tiny.""#
                     ),
                 }),
                 children: None,
