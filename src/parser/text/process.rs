@@ -31,23 +31,25 @@ pub fn process_text_block<'a>(
             // if next char is also a \n, then continue
             let next_char = rest.chars().nth(index + 1);
             if next_char == Some('\n') {
-                text_block_index += 1;
+                text_block_index = index + 1;
                 continue;
             }
 
-            let line = &rest[text_block_index + 1..];
+            let line = &rest[index + 1..];
 
             // otherwise check the indentation and if it does not fulfill the indentation, then break
             if !line.starts_with(indent_string) {
                 break;
             }
         } else {
-            text_block_index += 1;
+            text_block_index = index;
             continue;
         }
     }
 
-    let text_block = &rest[..text_block_index];
+    let text_block = &rest[..text_block_index + 1];
+
+    let rest = &rest[text_block_index + 1..];
 
     Ok((rest, text_block))
 }
@@ -86,10 +88,14 @@ span other text
             r#"    this is just some text
     it can be multiline
 
-    and also contain blank lines
+    and also contain blank lines"#
+        );
+        assert_eq!(
+            rest,
+            r#"
+span other text
 "#
         );
-        assert_eq!(rest, "");
     }
 
     #[test]
