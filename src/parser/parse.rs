@@ -1,9 +1,9 @@
-use nom::{bytes::complete::take_till, IResult};
+use nom::{IResult, bytes::complete::take_till};
 
 use super::{
+    HsmlNode, HsmlProcessContext, RootNode,
     comment::node::{comment_dev_node, comment_native_node},
     tag::node::tag_node,
-    HsmlNode, HsmlProcessContext, RootNode,
 };
 
 pub fn parse(input: &str) -> IResult<&str, RootNode> {
@@ -59,8 +59,8 @@ mod tests {
     use nom::error::{Error, ErrorKind};
 
     use crate::parser::{
-        attribute::node::AttributeNode, class::node::ClassNode, comment::node::CommentNode,
-        parse::parse, tag::node::TagNode, text::node::TextNode, HsmlNode, RootNode,
+        HsmlNode, RootNode, attribute::node::AttributeNode, class::node::ClassNode,
+        comment::node::CommentNode, parse::parse, tag::node::TagNode, text::node::TextNode,
     };
 
     #[test]

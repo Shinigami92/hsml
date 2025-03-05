@@ -1,7 +1,7 @@
 use nom::{
+    IResult, Needed,
     bytes::complete::tag,
     error::{Error, ErrorKind},
-    IResult, Needed,
 };
 
 pub fn process_class(input: &str) -> IResult<&str, &str> {

@@ -1,7 +1,7 @@
 use nom::{
+    IResult,
     bytes::complete::{tag, take_until},
     error::{Error, ErrorKind},
-    IResult,
 };
 
 pub fn process_dev_comment(input: &str) -> IResult<&str, &str> {

@@ -1,17 +1,16 @@
 use nom::{
+    IResult,
     bytes::complete::{take_till, take_till1},
     error::{Error, ErrorKind},
-    IResult,
 };
 
 use crate::parser::{
-    attribute,
-    class::node::{class_node, ClassNode},
+    HsmlNode, HsmlProcessContext, attribute,
+    class::node::{ClassNode, class_node},
     comment::node::{comment_dev_node, comment_native_node},
     id::{self, node::IdNode},
     tag::process::process_tag,
     text::{self, node::TextNode},
-    HsmlNode, HsmlProcessContext,
 };
 
 #[derive(Debug, PartialEq)]
@@ -199,10 +198,10 @@ pub fn tag_node<'a>(input: &'a str, context: &mut HsmlProcessContext) -> IResult
 #[cfg(test)]
 mod tests {
     use crate::parser::{
-        class::node::ClassNode,
-        tag::node::{tag_node, TagNode},
-        text::node::TextNode,
         HsmlProcessContext,
+        class::node::ClassNode,
+        tag::node::{TagNode, tag_node},
+        text::node::TextNode,
     };
 
     #[test]

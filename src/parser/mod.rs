@@ -1,4 +1,4 @@
-use nom::{character::complete::line_ending, IResult};
+use nom::{IResult, character::complete::line_ending};
 
 use self::{
     attribute::node::AttributeNode, class::node::ClassNode, comment::node::CommentNode,

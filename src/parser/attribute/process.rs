@@ -1,7 +1,7 @@
 use nom::{
+    IResult, Needed,
     bytes::complete::tag,
     error::{Error, ErrorKind},
-    IResult, Needed,
 };
 
 use crate::parser::HsmlProcessContext;
@@ -231,8 +231,8 @@ mod tests {
     use nom::error::{Error, ErrorKind};
 
     use crate::parser::{
-        attribute::process::{process_attribute, process_attribute_key, process_attribute_value},
         HsmlProcessContext,
+        attribute::process::{process_attribute, process_attribute_key, process_attribute_value},
     };
 
     #[test]

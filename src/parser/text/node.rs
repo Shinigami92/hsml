@@ -44,8 +44,8 @@ pub fn text_node(input: &str) -> IResult<&str, TextNode> {
 #[cfg(test)]
 mod tests {
     use crate::parser::{
-        text::node::{text_block_node, TextNode},
         HsmlProcessContext,
+        text::node::{TextNode, text_block_node},
     };
 
     #[test]

@@ -1,6 +1,6 @@
 use crate::parser::{
-    attribute::node::AttributeNode, comment::node::CommentNode, tag::node::TagNode, HsmlNode,
-    RootNode,
+    HsmlNode, RootNode, attribute::node::AttributeNode, comment::node::CommentNode,
+    tag::node::TagNode,
 };
 
 #[derive(Default)]
@@ -120,10 +120,10 @@ pub fn compile(hsml_ast: &RootNode, options: &HsmlCompileOptions) -> String {
 #[cfg(test)]
 mod tests {
     use crate::{
-        compiler::{compile, HsmlCompileOptions},
+        compiler::{HsmlCompileOptions, compile},
         parser::{
-            id::node::IdNode, parse::parse, tag::node::TagNode, text::node::TextNode, HsmlNode,
-            RootNode,
+            HsmlNode, RootNode, id::node::IdNode, parse::parse, tag::node::TagNode,
+            text::node::TextNode,
         },
     };
 

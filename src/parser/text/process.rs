@@ -1,7 +1,7 @@
 use nom::{
+    IResult,
     branch::alt,
     bytes::complete::{tag, take_until1},
-    IResult,
 };
 
 use crate::parser::HsmlProcessContext;
@@ -62,8 +62,8 @@ pub fn process_text(input: &str) -> IResult<&str, &str> {
 #[cfg(test)]
 mod tests {
     use crate::parser::{
-        text::process::{process_text, process_text_block},
         HsmlProcessContext,
+        text::process::{process_text, process_text_block},
     };
 
     #[test]
