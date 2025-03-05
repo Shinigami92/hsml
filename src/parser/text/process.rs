@@ -1,5 +1,5 @@
 use nom::{
-    IResult,
+    IResult, Parser,
     branch::alt,
     bytes::complete::{tag, take_until1},
 };
@@ -13,7 +13,7 @@ pub fn process_text_block<'a>(
     let (rest, _) = tag(".")(input)?;
 
     // eat one \r\n or \n
-    let (rest, _) = alt((tag("\r\n"), tag("\n")))(rest)?;
+    let (rest, _) = alt((tag("\r\n"), tag("\n"))).parse(rest)?;
 
     let indent_string: &str = if let Some(indent_string) = &context.indent_string {
         indent_string
