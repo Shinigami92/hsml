@@ -1,9 +1,9 @@
 use nom::{
-    bytes::complete::{tag, take_till},
     IResult,
+    bytes::complete::{tag, take_till},
 };
 
-use crate::parser::{comment::node::comment_dev_node, HsmlNode, HsmlProcessContext};
+use crate::parser::{HsmlNode, HsmlProcessContext, comment::node::comment_dev_node};
 
 use super::process::process_attribute;
 
@@ -80,9 +80,9 @@ pub fn attribute_nodes<'a>(
 #[cfg(test)]
 mod tests {
     use crate::parser::{
-        attribute::node::{attribute_node, attribute_nodes, AttributeNode},
-        comment::node::CommentNode,
         HsmlNode, HsmlProcessContext,
+        attribute::node::{AttributeNode, attribute_node, attribute_nodes},
+        comment::node::CommentNode,
     };
 
     #[test]

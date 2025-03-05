@@ -1,4 +1,4 @@
-use nom::{bytes::complete::tag, IResult};
+use nom::{IResult, bytes::complete::tag};
 
 pub fn process_id(input: &str) -> IResult<&str, &str> {
     let (input, _) = tag("#")(input)?;

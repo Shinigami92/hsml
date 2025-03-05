@@ -34,7 +34,7 @@ pub fn comment_native_node(input: &str) -> IResult<&str, CommentNode> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::comment::node::{comment_dev_node, comment_native_node, CommentNode};
+    use crate::parser::comment::node::{CommentNode, comment_dev_node, comment_native_node};
 
     #[test]
     fn it_should_return_comment_dev_node() {

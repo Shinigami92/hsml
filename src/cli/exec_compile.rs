@@ -2,7 +2,7 @@ use std::{env, fs, path::PathBuf};
 
 use clap::ArgMatches;
 use hsml::{
-    compiler::{compile, HsmlCompileOptions},
+    compiler::{HsmlCompileOptions, compile},
     parser::parse::parse,
 };
 

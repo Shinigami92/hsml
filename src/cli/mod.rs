@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{arg, command, value_parser, Command};
+use clap::{Command, arg, command, value_parser};
 
 pub mod exec_check;
 pub mod exec_compile;

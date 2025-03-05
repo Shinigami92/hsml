@@ -1,4 +1,4 @@
-use nom::{bytes::complete::take_till1, IResult, Needed};
+use nom::{IResult, Needed, bytes::complete::take_till1};
 
 fn starts_with_ascii_alphabetic(s: &str) -> bool {
     if let Some(c) = s.chars().next() {
@@ -21,8 +21,8 @@ pub fn process_tag(input: &str) -> IResult<&str, &str> {
 #[cfg(test)]
 mod tests {
     use nom::{
-        error::{Error, ErrorKind},
         Needed,
+        error::{Error, ErrorKind},
     };
 
     use crate::parser::tag::process::process_tag;
